@@ -103,7 +103,7 @@ window-rule {
 
 | Parameter | Type | Typical Range | Description |
 | :--- | :--- | :--- | :--- |
-| `liquidity` | float | `0.0` – `1.0` | Controls how fluid/organic the glass looks. `0.0` = standard glass, `1.0` = deep liquid glass with thick meniscus, strong chromatic dispersion, and organic body curvature (matching kwin-effects-glass). |
+| `liquidity` | float | `0.0` – `2.0+` | Controls fluid water-drop optics intensity. `0.0` = standard glass, `1.0` = deep liquid water-drop reflection with surface-tension curvature and central magnification (matching kwin-effects-glass rose terminal), `2.0+` = extreme fluid distortion. |
 | `refraction-strength` | float | `1.0` – `6.0` | Overall magnitude of the optical refraction. |
 | `power-factor` | float | `2.0` – `15.0` | Falloff curve from the window edge inward (lower = wider glass bevel). |
 | `refraction-power` | float | `0.5` – `2.0` | Exponential power applied to displacement vectors. |
