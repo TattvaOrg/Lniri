@@ -578,7 +578,7 @@ liquid-glass {
 
 | Parameter | Type | Typical Range | Description |
 | :--- | :--- | :--- | :--- |
-| `liquidity` | float | `0.0` – `1.0` | Controls fluid/liquid optics intensity. `0.0` = baseline glass, `1.0` = deep liquid meniscus, Snell IOR boost (+0.35), 2× dispersion, fluid body curvature (matches kwin-effects-glass). |
+| `liquidity` | float | `0.0` – `2.0+` | Controls fluid water-drop optics intensity. `0.0` = baseline glass, `1.0` = deep liquid water droplet with optical corner curvature inflation, central wallpaper magnification, and Snell IOR boost (matches kwin-effects-glass liquid_enough.png), `2.0+` = extreme fluid distortion. |
 | `refraction-strength` | float | `1.0` – `6.0` | Overall magnitude of the background optical refraction. |
 | `power-factor` | float | `2.0` – `15.0` | Falloff curve from the window edge inward (lower = wider glass bevel, higher = concentrated at rim). |
 | `refraction-power` | float | `0.5` – `2.0` | Exponential power applied to the displacement vector. |
