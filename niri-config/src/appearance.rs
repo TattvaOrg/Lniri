@@ -1057,6 +1057,7 @@ impl MergeWith<BlurPart> for Blur {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct LiquidGlass {
+    pub liquidity: f64,
     pub refraction_strength: f64,
     pub power_factor: f64,
     pub refraction_a: f64,
@@ -1088,6 +1089,7 @@ pub struct LiquidGlass {
 impl Default for LiquidGlass {
     fn default() -> Self {
         Self {
+            liquidity: 0.0,
             refraction_strength: 1.0,
             power_factor: 3.0,
             refraction_a: 0.04,
@@ -1120,6 +1122,8 @@ impl Default for LiquidGlass {
 
 #[derive(knuffel::Decode, Debug, Default, Clone, Copy, PartialEq)]
 pub struct LiquidGlassPart {
+    #[knuffel(child, unwrap(argument))]
+    pub liquidity: Option<FloatOrInt<0, 100>>,
     #[knuffel(child, unwrap(argument))]
     pub refraction_strength: Option<FloatOrInt<0, 100>>,
     #[knuffel(child, unwrap(argument))]
@@ -1178,6 +1182,7 @@ impl MergeWith<LiquidGlassPart> for LiquidGlass {
     fn merge_with(&mut self, part: &LiquidGlassPart) {
         merge!(
             (self, part),
+            liquidity,
             refraction_strength,
             power_factor,
             refraction_a,
