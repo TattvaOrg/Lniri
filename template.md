@@ -97,6 +97,7 @@ window-rule {
         blur true
         xray true
         liquid-glass {
+            liquidity 0.8
             refraction-strength 4.5
             power-factor 3.5
             refraction-power 1.5
@@ -121,6 +122,7 @@ window-rule {
         blur true
         xray true
         liquid-glass {
+            liquidity 0.7
             refraction-strength 4.0
             power-factor 3.5
             refraction-power 1.5
@@ -145,6 +147,7 @@ window-rule {
         blur true
         xray true
         liquid-glass {
+            liquidity 0.7
             refraction-strength 4.0
             power-factor 3.5
             refraction-power 1.5
@@ -169,6 +172,7 @@ window-rule {
         blur true
         xray true
         liquid-glass {
+            liquidity 0.7
             refraction-strength 4.0
             power-factor 3.0
             refraction-power 1.5
@@ -193,6 +197,7 @@ window-rule {
 //         blur true
 //         xray true
 //         liquid-glass {
+//             liquidity 0.6
 //             refraction-strength 3.5
 //             power-factor 4.0
 //             refraction-power 1.2
@@ -219,6 +224,7 @@ layer-rule {
         blur true
         xray true // Use xray true for fast wallpaper refraction, or xray false to refract windows beneath
         liquid-glass {
+            liquidity 0.7
             refraction-strength 5.0
             power-factor 3.5
             refraction-power 1.8
@@ -406,6 +412,7 @@ background-effect {
     blur true
     xray true
     liquid-glass {
+        liquidity 0.8
         refraction-strength 4.0
         power-factor 3.5
         refraction-power 1.5
@@ -424,12 +431,40 @@ background-effect {
 
 ---
 
-### Preset 2: Pure Crystal Glass (Zero Dark Theme)
+### Preset 2: Rose Liquid Glass (Reference Look from liquid_enough.png)
+*Maximum liquid meniscus depth, cohesive fluid dome, and rich organic Cauchy dispersion as seen in the kwin-effects-glass rose terminal.*
+
+```kdl
+background-effect {
+    blur true
+    xray true
+    liquid-glass {
+        liquidity 1.0
+        refraction-strength 4.5
+        power-factor 3.5
+        refraction-power 1.5
+        glow-weight 0.0
+        edge-lighting 0.5
+        saturation 1.2
+        vibrancy 0.4
+        adaptive-dim 0.0
+        adaptive-boost 0.0
+        physical-refraction 1.0
+        lens-distortion 0.2
+        fringing 0.5
+    }
+}
+```
+
+---
+
+### Preset 3: Pure Crystal Glass (Zero Dark Theme)
 *100% transparent optical glass with zero dark shading or tint. Completely clear window showing pure background wallpaper.*
 
 ```kdl
 // In your terminal config: background_opacity 0.0 (or opacity = 0.0)
 liquid-glass {
+    liquidity 0.5
     refraction-strength 4.0
     power-factor 3.5
     refraction-power 1.5
@@ -447,11 +482,12 @@ liquid-glass {
 
 ---
 
-### Preset 2: Liquid Prism (README Look)
+### Preset 4: Liquid Prism (README Look)
 *Maximum chromatic aberration, vivid edge-lighting, and dramatic optical curvature.*
 
 ```kdl
 liquid-glass {
+    liquidity 0.9
     refraction-strength 4.0
     power-factor 3.5
     refraction-power 1.5
@@ -469,11 +505,12 @@ liquid-glass {
 
 ---
 
-### Preset 2: Frosted Smoked Glass (High Contrast)
+### Preset 5: Frosted Smoked Glass (High Contrast)
 *Subtle optical refraction, reduced fringing, and optimized text legibility for coding.*
 
 ```kdl
 liquid-glass {
+    liquidity 0.3
     refraction-strength 2.5
     power-factor 8.0
     refraction-power 1.0
@@ -491,11 +528,12 @@ liquid-glass {
 
 ---
 
-### Preset 3: Cyberpunk Neon Rim
+### Preset 6: Cyberpunk Neon Rim
 *Intense chromatic dispersion (rainbow prism border) and high vibrancy.*
 
 ```kdl
 liquid-glass {
+    liquidity 0.9
     refraction-strength 5.0
     power-factor 2.5
     refraction-power 1.8
@@ -513,11 +551,12 @@ liquid-glass {
 
 ---
 
-### Preset 4: Subtle Crystal
+### Preset 7: Subtle Crystal
 *Ultra-clean, crisp, minimal distortion.*
 
 ```kdl
 liquid-glass {
+    liquidity 0.1
     refraction-strength 1.8
     power-factor 12.0
     refraction-power 0.8
@@ -539,6 +578,7 @@ liquid-glass {
 
 | Parameter | Type | Typical Range | Description |
 | :--- | :--- | :--- | :--- |
+| `liquidity` | float | `0.0` – `1.0` | Controls fluid/liquid optics intensity. `0.0` = baseline glass, `1.0` = deep liquid meniscus, Snell IOR boost (+0.35), 2× dispersion, fluid body curvature (matches kwin-effects-glass). |
 | `refraction-strength` | float | `1.0` – `6.0` | Overall magnitude of the background optical refraction. |
 | `power-factor` | float | `2.0` – `15.0` | Falloff curve from the window edge inward (lower = wider glass bevel, higher = concentrated at rim). |
 | `refraction-power` | float | `0.5` – `2.0` | Exponential power applied to the displacement vector. |
