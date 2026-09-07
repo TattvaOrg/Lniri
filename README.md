@@ -76,7 +76,7 @@ window-rule {
     match app-id="Alacritty"
     draw-border-with-background false
     background-effect {
-        blur true
+        blur false
         xray true
         liquid-glass {
             liquidity 0.8
