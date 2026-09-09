@@ -11,7 +11,7 @@ https://github.com/user-attachments/assets/b98440ec-ffa4-47c4-9473-23d51ceb8d4d
 Install Lniri or update an existing installation directly with a single command:
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/AbsolOrg/Lniri/main/install.sh)"
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/TattvaOrg/Lniri/main/install.sh)"
 ```
 
 ### Why this installer is smart:
@@ -124,7 +124,7 @@ window-rule {
 ## Manual Installation (from Git)
 
 ```bash
-git clone https://github.com/AbsolOrg/Lniri.git
+git clone https://github.com/TattvaOrg/Lniri.git
 cd Lniri
 ./install.sh
 ```
