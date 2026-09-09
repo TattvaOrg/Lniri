@@ -91,7 +91,7 @@ else
     git -C "$OVERLAY_SRC_DIR" pull --rebase origin main || true
   else
     echo -e "==> Downloading Lniri overlay files..."
-    git clone https://github.com/AbsolOrg/Lniri.git "$OVERLAY_SRC_DIR"
+    git clone https://github.com/TattvaOrg/Lniri.git "$OVERLAY_SRC_DIR"
   fi
 fi
 
@@ -234,6 +234,6 @@ echo -e "  • ${BOLD}From TTY:${RESET} exec /usr/local/bin/lniri-session"
 echo -e "  • ${BOLD}Standalone:${RESET} lniri"
 echo ""
 echo -e "Setup guide & presets:"
-echo -e "  Check ${CYAN}https://github.com/AbsolOrg/Lniri/blob/main/template.md${RESET} for"
+echo -e "  Check ${CYAN}https://github.com/TattvaOrg/Lniri/blob/main/template.md${RESET} for"
 echo -e "  full terminal transparency configs (Alacritty, Kitty, Ghostty) and glass presets."
 echo ""
