@@ -3,7 +3,7 @@ set -e
 
 # ==============================================================================
 # Lniri - Liquid Glass Compositor Installer & Updater
-# Repository: https://github.com/AbsolOrg/Lniri
+# Repository: https://github.com/TattvaOrg/Lniri
 # ==============================================================================
 
 BOLD="\033[1m"
@@ -95,88 +95,147 @@ else
   fi
 fi
 
-# 3. Detect package manager and install build dependencies
-echo -e "==> Checking and installing build dependencies..."
-if command -v pacman >/dev/null 2>&1; then
-  ARCH_PKGS=(git rust cargo pkgconf clang libxkbcommon libinput seatd pango cairo pipewire wayland)
-  MISSING_PKGS=()
-  for pkg in "${ARCH_PKGS[@]}"; do
-    if ! pacman -Q "$pkg" >/dev/null 2>&1; then
-      MISSING_PKGS+=("$pkg")
-    fi
-  done
-  if [ ${#MISSING_PKGS[@]} -gt 0 ]; then
-    echo -e "==> Installing missing dependencies: ${MISSING_PKGS[*]}..."
-    sudo pacman -S --needed --noconfirm "${MISSING_PKGS[@]}"
+# 2.5 Architecture detection & Pre-compiled GitHub Release Fast-Path
+ARCH="$(uname -m)"
+LNIRI_REPO="${LNIRI_REPO:-TattvaOrg/Lniri}"
+INSTALL_PREBUILT=true
+for arg in "$@"; do
+  if [ "$arg" = "--source" ] || [ "$arg" = "--build-from-source" ]; then
+    INSTALL_PREBUILT=false
   fi
-elif command -v apt-get >/dev/null 2>&1; then
-  echo -e "==> Ensuring build dependencies with apt-get..."
-  sudo apt-get update -y
-  sudo apt-get install -y git build-essential cargo rustc pkg-config clang \
-    libxkbcommon-dev libinput-dev libseat-dev libpango1.0-dev libcairo2-dev \
-    libpipewire-0.3-dev libsystemd-dev libwayland-dev libgbm-dev libdisplay-info-dev libudev-dev
-elif command -v dnf >/dev/null 2>&1; then
-  echo -e "==> Ensuring build dependencies with dnf..."
-  sudo dnf install -y git cargo rust pkgconf-pkg-config clang \
-    libxkbcommon-devel libinput-devel libseat-devel pango-devel cairo-devel \
-    pipewire-devel systemd-devel wayland-devel mesa-libgbm-devel libdisplay-info-devel
-elif command -v zypper >/dev/null 2>&1; then
-  echo -e "==> Ensuring build dependencies with zypper..."
-  sudo zypper install -y git cargo rust clang pkg-config libxkbcommon-devel libinput-devel \
-    libseat-devel pango-devel cairo-devel pipewire-devel systemd-devel wayland-devel
+done
+if [ "${LNIRI_BUILD:-}" = "source" ]; then
+  INSTALL_PREBUILT=false
 fi
 
-# 4. Clone or update upstream Niri in persistent cache directory
-mkdir -p "$LNIRI_BASE_DIR"
-if [ ! -d "$NIRI_SRC_DIR/.git" ]; then
-  echo -e "==> Cloning upstream official Niri repository into persistent build directory..."
-  git clone https://github.com/niri-wm/niri.git "$NIRI_SRC_DIR"
-else
-  echo -e "==> Updating upstream Niri source repository..."
-  git -C "$NIRI_SRC_DIR" fetch --tags origin
-fi
+BINARY_INSTALLED=false
+if [ "$INSTALL_PREBUILT" = "true" ]; then
+  echo -e "==> Checking for pre-compiled binary release from GitHub (${GREEN}$LNIRI_REPO${RESET} - $ARCH)..."
+  DOWNLOAD_URL=""
 
-cd "$NIRI_SRC_DIR"
-if [ "$TARGET_CHANNEL" = "release" ]; then
-  LATEST_TAG="$(git tag -l 'v*' --sort=-v:refname | head -n1)"
-  if [ -n "$LATEST_TAG" ]; then
-    echo -e "==> Checking out upstream Niri release tag: ${GREEN}$LATEST_TAG${RESET}..."
-    git checkout -f "$LATEST_TAG"
+  if [ -n "${LNIRI_VERSION:-}" ]; then
+    CANDIDATE_URL="https://github.com/$LNIRI_REPO/releases/download/$LNIRI_VERSION/lniri-$ARCH"
+    if curl -sI "$CANDIDATE_URL" 2>/dev/null | grep -q "302\|200"; then
+      DOWNLOAD_URL="$CANDIDATE_URL"
+    fi
+  fi
+
+  if [ -z "$DOWNLOAD_URL" ]; then
+    LATEST_JSON="$(curl -sSL "https://api.github.com/repos/$LNIRI_REPO/releases/latest" 2>/dev/null || true)"
+    DOWNLOAD_URL="$(echo "$LATEST_JSON" | grep -o "https://[^\"]*releases/download/[^\"]*/lniri-$ARCH" | head -n1 || true)"
+  fi
+
+  if [ -z "$DOWNLOAD_URL" ]; then
+    RELEASES_JSON="$(curl -sSL "https://api.github.com/repos/$LNIRI_REPO/releases" 2>/dev/null || true)"
+    DOWNLOAD_URL="$(echo "$RELEASES_JSON" | grep -o "https://[^\"]*releases/download/[^\"]*/lniri-$ARCH" | head -n1 || true)"
+  fi
+
+  if [ -n "$DOWNLOAD_URL" ]; then
+    echo -e "==> Pre-compiled binary found: ${GREEN}$DOWNLOAD_URL${RESET}"
+    echo -e "==> Downloading Lniri release binary..."
+    TMP_BIN="$(mktemp)"
+    if curl -fL --progress-bar "$DOWNLOAD_URL" -o "$TMP_BIN"; then
+      chmod +x "$TMP_BIN"
+      sudo install -Dm755 "$TMP_BIN" /usr/local/bin/lniri
+      sudo ln -sf /usr/local/bin/lniri /usr/local/bin/Lniri
+      rm -f "$TMP_BIN"
+      echo -e "==> Pre-compiled binary successfully installed to ${GREEN}/usr/local/bin/lniri${RESET}!"
+      BINARY_INSTALLED=true
+    else
+      rm -f "$TMP_BIN"
+      echo -e "${YELLOW}==> Binary download failed. Falling back to source compilation...${RESET}"
+    fi
   else
-    echo -e "==> No release tags found; checking out main branch..."
+    echo -e "==> No precompiled binary found for $ARCH. Falling back to source compilation..."
+  fi
+fi
+
+if [ "$BINARY_INSTALLED" = "false" ]; then
+  # 3. Detect package manager and install build dependencies
+  echo -e "==> Checking and installing build dependencies..."
+  if command -v pacman >/dev/null 2>&1; then
+    ARCH_PKGS=(git rust cargo pkgconf clang libxkbcommon libinput seatd pango cairo pipewire wayland)
+    MISSING_PKGS=()
+    for pkg in "${ARCH_PKGS[@]}"; do
+      if ! pacman -Q "$pkg" >/dev/null 2>&1; then
+        MISSING_PKGS+=("$pkg")
+      fi
+    done
+    if [ ${#MISSING_PKGS[@]} -gt 0 ]; then
+      echo -e "==> Installing missing dependencies: ${MISSING_PKGS[*]}..."
+      sudo pacman -S --needed --noconfirm "${MISSING_PKGS[@]}"
+    fi
+  elif command -v apt-get >/dev/null 2>&1; then
+    echo -e "==> Ensuring build dependencies with apt-get..."
+    sudo apt-get update -y
+    sudo apt-get install -y git build-essential cargo rustc pkg-config clang \
+      libxkbcommon-dev libinput-dev libseat-dev libpango1.0-dev libcairo2-dev \
+      libpipewire-0.3-dev libsystemd-dev libwayland-dev libgbm-dev libdisplay-info-dev libudev-dev
+  elif command -v dnf >/dev/null 2>&1; then
+    echo -e "==> Ensuring build dependencies with dnf..."
+    sudo dnf install -y git cargo rust pkgconf-pkg-config clang \
+      libxkbcommon-devel libinput-devel libseat-devel pango-devel cairo-devel \
+      pipewire-devel systemd-devel wayland-devel mesa-libgbm-devel libdisplay-info-devel
+  elif command -v zypper >/dev/null 2>&1; then
+    echo -e "==> Ensuring build dependencies with zypper..."
+    sudo zypper install -y git cargo rust clang pkg-config libxkbcommon-devel libinput-devel \
+      libseat-devel pango-devel cairo-devel pipewire-devel systemd-devel wayland-devel
+  fi
+
+  # 4. Clone or update upstream Niri in persistent cache directory
+  mkdir -p "$LNIRI_BASE_DIR"
+  if [ ! -d "$NIRI_SRC_DIR/.git" ]; then
+    echo -e "==> Cloning upstream official Niri repository into persistent build directory..."
+    git clone https://github.com/niri-wm/niri.git "$NIRI_SRC_DIR"
+  else
+    echo -e "==> Updating upstream Niri source repository..."
+    git -C "$NIRI_SRC_DIR" fetch --tags origin
+  fi
+
+  cd "$NIRI_SRC_DIR"
+  if [ "$TARGET_CHANNEL" = "release" ]; then
+    LATEST_TAG="$(git tag -l 'v*' --sort=-v:refname | head -n1)"
+    if [ -n "$LATEST_TAG" ]; then
+      echo -e "==> Checking out upstream Niri release tag: ${GREEN}$LATEST_TAG${RESET}..."
+      git checkout -f "$LATEST_TAG"
+    else
+      echo -e "==> No release tags found; checking out main branch..."
+      git checkout -f main
+      git pull --rebase origin main
+    fi
+  else
+    echo -e "==> Checking out upstream Niri main branch..."
     git checkout -f main
     git pull --rebase origin main
   fi
-else
-  echo -e "==> Checking out upstream Niri main branch..."
-  git checkout -f main
-  git pull --rebase origin main
+
+  # 5. Apply Lniri liquid glass overlay
+  echo -e "==> Applying Lniri liquid-glass extension files..."
+  mkdir -p "$NIRI_SRC_DIR/src/render_helpers/shaders"
+  mkdir -p "$NIRI_SRC_DIR/niri-config/src"
+  mkdir -p "$NIRI_SRC_DIR/src/layer"
+
+  cp -f "$OVERLAY_SRC_DIR/src/render_helpers/liquid_glass.rs" "$NIRI_SRC_DIR/src/render_helpers/"
+  cp -f "$OVERLAY_SRC_DIR/src/render_helpers/background_effect.rs" "$NIRI_SRC_DIR/src/render_helpers/"
+  cp -f "$OVERLAY_SRC_DIR/src/render_helpers/framebuffer_effect.rs" "$NIRI_SRC_DIR/src/render_helpers/"
+  cp -f "$OVERLAY_SRC_DIR/src/render_helpers/xray.rs" "$NIRI_SRC_DIR/src/render_helpers/"
+  cp -f "$OVERLAY_SRC_DIR/src/render_helpers/mod.rs" "$NIRI_SRC_DIR/src/render_helpers/"
+  cp -f "$OVERLAY_SRC_DIR/src/render_helpers/shaders/clipped_surface.frag" "$NIRI_SRC_DIR/src/render_helpers/shaders/"
+  cp -f "$OVERLAY_SRC_DIR/src/render_helpers/shaders/mod.rs" "$NIRI_SRC_DIR/src/render_helpers/shaders/"
+  cp -f "$OVERLAY_SRC_DIR/niri-config/src/appearance.rs" "$NIRI_SRC_DIR/niri-config/src/"
+  if [ -f "$OVERLAY_SRC_DIR/src/layer/mapped.rs" ]; then
+    cp -f "$OVERLAY_SRC_DIR/src/layer/mapped.rs" "$NIRI_SRC_DIR/src/layer/"
+  fi
+
+  # 6. Build Lniri incrementally using persistent target/ cache
+  echo -e "==> Compiling Lniri (target cache in ${GREEN}$NIRI_SRC_DIR/target${RESET})..."
+  cargo build --release --bin niri
+
+  # 7. Install standalone binary as /usr/local/bin/lniri (leaving normal niri intact)
+  echo -e "==> Installing binary to /usr/local/bin/lniri..."
+  sudo install -Dm755 "$NIRI_SRC_DIR/target/release/niri" /usr/local/bin/lniri
+  sudo ln -sf /usr/local/bin/lniri /usr/local/bin/Lniri
 fi
-
-# 5. Apply Lniri liquid glass overlay
-echo -e "==> Applying Lniri liquid-glass extension files..."
-mkdir -p "$NIRI_SRC_DIR/src/render_helpers/shaders"
-mkdir -p "$NIRI_SRC_DIR/niri-config/src"
-mkdir -p "$NIRI_SRC_DIR/src/layer"
-
-cp -f "$OVERLAY_SRC_DIR/src/render_helpers/liquid_glass.rs" "$NIRI_SRC_DIR/src/render_helpers/"
-cp -f "$OVERLAY_SRC_DIR/src/render_helpers/background_effect.rs" "$NIRI_SRC_DIR/src/render_helpers/"
-cp -f "$OVERLAY_SRC_DIR/src/render_helpers/framebuffer_effect.rs" "$NIRI_SRC_DIR/src/render_helpers/"
-cp -f "$OVERLAY_SRC_DIR/src/render_helpers/xray.rs" "$NIRI_SRC_DIR/src/render_helpers/"
-cp -f "$OVERLAY_SRC_DIR/src/render_helpers/mod.rs" "$NIRI_SRC_DIR/src/render_helpers/"
-cp -f "$OVERLAY_SRC_DIR/src/render_helpers/shaders/clipped_surface.frag" "$NIRI_SRC_DIR/src/render_helpers/shaders/"
-cp -f "$OVERLAY_SRC_DIR/src/render_helpers/shaders/mod.rs" "$NIRI_SRC_DIR/src/render_helpers/shaders/"
-cp -f "$OVERLAY_SRC_DIR/niri-config/src/appearance.rs" "$NIRI_SRC_DIR/niri-config/src/"
-cp -f "$OVERLAY_SRC_DIR/src/layer/mapped.rs" "$NIRI_SRC_DIR/src/layer/"
-
-# 6. Build Lniri incrementally using persistent target/ cache
-echo -e "==> Compiling Lniri (target cache in ${GREEN}$NIRI_SRC_DIR/target${RESET})..."
-cargo build --release --bin niri
-
-# 7. Install standalone binary as /usr/local/bin/lniri (leaving normal niri intact)
-echo -e "==> Installing binary to /usr/local/bin/lniri..."
-sudo install -Dm755 "$NIRI_SRC_DIR/target/release/niri" /usr/local/bin/lniri
-sudo ln -sf /usr/local/bin/lniri /usr/local/bin/Lniri
 
 # 8. Install session script
 echo -e "==> Installing session script /usr/local/bin/lniri-session..."

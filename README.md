@@ -105,19 +105,27 @@ window-rule {
 
 | Parameter | Type | Typical Range | Description |
 | :--- | :--- | :--- | :--- |
-| `liquidity` | float | `0.0` – `2.0+` | Controls fluid water-drop optics intensity. `0.0` = standard glass, `1.0` = deep liquid water-drop reflection with surface-tension curvature and central magnification (matching kwin-effects-glass rose terminal), `2.0+` = extreme fluid distortion. |
-| `refraction-strength` | float | `1.0` – `6.0` | Overall magnitude of the optical refraction. |
+| `mode` | string | `"kwin-glass"` or `"liquid"` | Shader engine toggle. `"kwin-glass"` runs the authentic Snell's law + caustic bevel + Oklab pipeline; `"liquid"` runs the fluid water-drop pipeline. Defaults to `"liquid"`. |
+| `liquidity` | float | `0.0` – `2.0+` | (`mode "liquid"`) Controls fluid water-drop optics intensity. `0.0` = standard glass, `1.0` = deep liquid water-drop reflection with surface-tension curvature and central magnification (matching kwin-effects-glass rose terminal), `2.0+` = extreme fluid distortion. |
+| `refraction-strength` | float | `1.0` – `6.0` | Overall magnitude of the optical refraction ($IOR = 1.0 + \text{strength}$). |
 | `power-factor` | float | `2.0` – `15.0` | Falloff curve from the window edge inward (lower = wider glass bevel). |
-| `refraction-power` | float | `0.5` – `2.0` | Exponential power applied to displacement vectors. |
+| `refraction-bevel-intensity` | float | `1.0` – `20.0` | (`mode "kwin-glass"`) Caustic bevel steepness & displacement depth. Default `10.0`. |
+| `refraction-offset-strength` | float | `1.0` – `20.0` | (`mode "kwin-glass"`) Corner optical curvature distortion. Default `8.0`. |
+| `edge-thickness` | float | `0.05` – `0.35` | Meniscus / bevel border width relative to window dimensions. Default `0.18`. |
+| `oklab-saturation` | float | `0.0` or `1.0` | (`mode "kwin-glass"`) Set `1.0` to enable Oklab perceptual color space saturation. |
+| `refraction-power` | float | `0.5` – `2.0` | (`mode "liquid"`) Exponential power applied to displacement vectors. |
 | `fringing` | float | `0.0` – `1.0` | Chromatic dispersion (RGB prism fringing along edges). |
 | `edge-lighting` | float | `0.0` – `1.0` | Blends wallpaper colors dynamically onto window borders. |
-| `glow-weight` | float | `0.0` – `0.2` | Synthetic white highlight along the rim (`0.0` for pure optical glass). |
+| `glow-weight` | float | `0.0` – `0.6` | Dual-highlight and shadow rim profile intensity along the glass boundary. |
 | `saturation` | float | `0.5` – `1.5` | Color saturation multiplier of the refracted background. |
 | `vibrancy` | float | `0.0` – `0.5` | Luminance and vibrancy boost for glass substrates. |
 | `adaptive-dim` | float | `0.0` – `0.5` | Darkens glass over very bright wallpapers for readability (`0.0` for pure clear glass). |
 | `adaptive-boost` | float | `0.0` – `0.5` | Lightens glass over very dark wallpapers. |
-| `physical-refraction` | float | `0.0` or `1.0` | `0.0` = SDF normal mode; `1.0` = center-directed Snell mode. |
+| `physical-refraction` | float | `0.0` or `1.0` | (`mode "liquid"`) `0.0` = SDF normal mode; `1.0` = center-directed Snell mode. |
 | `lens-distortion` | float | `0.0` – `0.5` | Subtle barrel lens distortion across the window surface. |
+
+> [!TIP]
+> Standalone GLSL shader available at [`resources/shaders/kwin-glass.frag`](file:///home/cachy/github-p/github-based/glass/Lniri/resources/shaders/kwin-glass.frag).
 
 ---
 

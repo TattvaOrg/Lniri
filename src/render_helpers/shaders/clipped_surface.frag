@@ -58,6 +58,10 @@ uniform float lg_adaptive_dim;
 uniform float lg_adaptive_boost;
 uniform float lg_edge_thickness;
 uniform float lg_padding_pixels;
+uniform float lg_mode;
+uniform float lg_bevel_intensity;
+uniform float lg_offset_strength;
+uniform float lg_oklab_saturation;
 
 float niri_rounding_alpha(vec2 coords, vec2 size, vec4 corner_radius);
 vec4 postprocess(vec4 color);
@@ -88,6 +92,242 @@ float roundedRectangleDist(vec2 p, vec2 b, vec4 r)
         : (p.y > 0.0 ? r.x : r.w);  // Left: Top-Left (r.x), Bottom-Left (r.w)
     vec2 q = abs(p) - b + radius;
     return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - radius;
+}
+
+// ----------------------------------------------------------------------------
+// Oklab Perceptual Color Space (Ported from kwin-effects-glass oklab.glsl)
+// ----------------------------------------------------------------------------
+vec3 srgbToLinear(vec3 c)
+{
+    return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(0.04045, c));
+}
+
+vec3 linearToSrgb(vec3 c)
+{
+    return mix(c * 12.92, 1.055 * pow(max(c, vec3(0.0)), vec3(1.0 / 2.4)) - 0.055, step(0.0031308, c));
+}
+
+vec3 linearToOklab(vec3 c)
+{
+    float l = 0.4122214708 * c.r + 0.5363325363 * c.g + 0.0514459929 * c.b;
+    float m = 0.2119034982 * c.r + 0.6806995451 * c.g + 0.1073969566 * c.b;
+    float s = 0.0883024619 * c.r + 0.2817188376 * c.g + 0.6299787005 * c.b;
+
+    float l_ = pow(max(l, 0.0), 1.0 / 3.0);
+    float m_ = pow(max(m, 0.0), 1.0 / 3.0);
+    float s_ = pow(max(s, 0.0), 1.0 / 3.0);
+
+    return vec3(
+        0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_,
+        1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_,
+        0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_
+    );
+}
+
+vec3 oklabToLinear(vec3 c)
+{
+    float l_ = c.r + 0.3963377774 * c.g + 0.2158037573 * c.b;
+    float m_ = c.r - 0.1055613458 * c.g - 0.0638541728 * c.b;
+    float s_ = c.r - 0.0894841775 * c.g - 1.2914855480 * c.b;
+
+    float l = l_ * l_ * l_;
+    float m = m_ * m_ * m_;
+    float s = s_ * s_ * s_;
+
+    return vec3(
+         4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+        -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+        -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s
+    );
+}
+
+vec3 oklabSaturate(vec3 srgb, float sat)
+{
+    if (abs(sat - 1.0) < 0.001) {
+        return srgb;
+    }
+    vec3 lab = linearToOklab(srgbToLinear(clamp(srgb, 0.0, 1.0)));
+    lab.gb *= sat;
+    return linearToSrgb(clamp(oklabToLinear(lab), 0.0, 1.0));
+}
+
+// ----------------------------------------------------------------------------
+// Authentic KWin Glass Effect (Ported from 4v3ngR/kwin-effects-glass)
+// ----------------------------------------------------------------------------
+vec4 kwinProcessSample(
+    vec2 baseUv,
+    vec3 glassNormal,
+    float ior,
+    float dispersion,
+    float magnitude,
+    vec2 uvScale,
+    vec2 lensShift,
+    vec2 uv_min,
+    vec2 uv_max
+) {
+    vec3 viewRay = vec3(0.0, 0.0, -1.0);
+
+    vec3 refractG = refract(viewRay, glassNormal, 1.0 / ior);
+    vec2 dir = length(refractG.xy) > 0.001 ? normalize(refractG.xy) : vec2(0.0);
+    vec2 shiftG = vec2(dir.x, -dir.y) * magnitude * uvScale + vec2(lensShift.x, -lensShift.y);
+    vec4 sampleG = texture2D(tex, clamp(baseUv + shiftG, uv_min, uv_max));
+
+    if (dispersion > 0.001) {
+        float fringe = clamp(dispersion, 0.0, 1.0) * 0.3;
+        vec2 shiftR = vec2(dir.x, -dir.y) * (magnitude * (1.0 + fringe)) * uvScale + vec2(lensShift.x, -lensShift.y);
+        vec2 shiftB = vec2(dir.x, -dir.y) * (magnitude * (1.0 - fringe)) * uvScale + vec2(lensShift.x, -lensShift.y);
+
+        float r = texture2D(tex, clamp(baseUv + shiftR, uv_min, uv_max)).r;
+        float b = texture2D(tex, clamp(baseUv + shiftB, uv_min, uv_max)).b;
+        return vec4(r, sampleG.g, b, sampleG.a);
+    }
+    return sampleG;
+}
+
+GlassFragment kwinSnellsRefraction(
+    vec2 uv_tex,
+    vec2 uv_min,
+    vec2 uv_max,
+    vec2 position,
+    vec2 halfBlurSize,
+    vec4 cornerRadius,
+    vec2 uvScale,
+    float minHalfSize,
+    float dist,
+    float edgeFactor,
+    float concaveFactor,
+    float refractionStrength,
+    float refractionBevelIntensity,
+    float refractionOffsetStrength,
+    float refractionRGBFringing
+) {
+    float bandWidth = clamp(minHalfSize * lg_edge_thickness, 0.1, minHalfSize * 0.9);
+    float ior = 1.0 + refractionStrength;
+
+    float minR = min(min(cornerRadius.x, cornerRadius.y), min(cornerRadius.z, cornerRadius.w));
+    float eps = min(bandWidth * 0.75, max(minR * 0.6, 1.0));
+    float dxp = roundedRectangleDist(position + vec2(eps, 0.0), halfBlurSize, cornerRadius);
+    float dxn = roundedRectangleDist(position - vec2(eps, 0.0), halfBlurSize, cornerRadius);
+    float dyp = roundedRectangleDist(position + vec2(0.0, eps), halfBlurSize, cornerRadius);
+    float dyn = roundedRectangleDist(position - vec2(0.0, eps), halfBlurSize, cornerRadius);
+    vec2 smoothGrad = vec2(dxp - dxn, dyp - dyn);
+    float gradLen = length(smoothGrad);
+
+    float normalHeight = concaveFactor * refractionBevelIntensity;
+    vec2 normalXY = gradLen > 0.001 ? (smoothGrad / gradLen) * normalHeight : vec2(0.0);
+    vec3 glassNormal = normalize(vec3(normalXY, 1.0));
+
+    float lensMagnitude = concaveFactor * bandWidth * refractionBevelIntensity;
+    vec2 surfaceNormal = gradLen > 0.001 ? (smoothGrad / gradLen) : vec2(1.0, 0.0);
+
+    vec2 normalizedPos = position / (halfBlurSize * 2.0);
+    float cornerWeight = dot(normalizedPos, normalizedPos) * refractionOffsetStrength;
+    surfaceNormal += normalizedPos * concaveFactor * cornerWeight;
+
+    vec2 lensShift = -surfaceNormal * lensMagnitude * uvScale;
+    float refractionMagnitude = lensMagnitude * refractionStrength;
+    vec4 color = kwinProcessSample(uv_tex, glassNormal, ior, refractionRGBFringing, refractionMagnitude, uvScale, lensShift, uv_min, uv_max);
+
+    return GlassFragment(color, dist, edgeFactor, concaveFactor, glassNormal, ior);
+}
+
+vec3 kwinGlassGlow(vec2 position, GlassFragment s, float glowStrength, float edgeLighting)
+{
+    float rimMask = clamp(0.25 * s.concaveFactor, 0.0, glowStrength);
+    vec3 glowColor = vec3(1.0);
+    vec3 glow = mix(s.color.rgb, glowColor, rimMask);
+    if (edgeLighting > 0.0) {
+        glow += (s.color.rgb * s.concaveFactor * edgeLighting);
+    }
+    return glow;
+}
+
+vec3 kwinGlassOutline(vec2 position, vec2 blurSize, GlassFragment s, float glowStrength)
+{
+    vec3 glow = s.color.rgb;
+
+    if (glowStrength > 0.0) {
+        float edgeMask = smoothstep(0.0, -2.0 * niri_scale, s.dist);
+        float borderInner = smoothstep(-1.0 * niri_scale, -3.0 * niri_scale, s.dist);
+        float edgeProfile = edgeMask - borderInner;
+        float thicknessShadow = pow(max(edgeProfile, 0.0), 0.9);
+        float shadowMask = smoothstep(blurSize.y * 0.7, -blurSize.y * 0.7, position.y) *
+                           smoothstep(blurSize.x * 0.7, -blurSize.x * 0.7, position.x);
+        float highlightMask = smoothstep(-blurSize.y * 0.7, blurSize.y * 0.7, position.y) *
+                              smoothstep(-blurSize.x * 0.7, blurSize.x * 0.7, position.x);
+
+        glow = mix(glow, vec3(1.0), thicknessShadow * shadowMask * glowStrength);
+        glow = mix(glow, vec3(1.0), thicknessShadow * highlightMask * glowStrength);
+    }
+
+    return glow;
+}
+
+vec4 kwin_glass_effect(
+    vec2 uv_tex,
+    vec2 windowUV,
+    vec4 baseColor,
+    vec2 blurSize,
+    vec4 cornerRadius,
+    vec2 uvScale,
+    float refractionStrength,
+    float refractionNormalPow,
+    float refractionRGBFringing,
+    float refractionOffsetStrength,
+    float refractionBevelIntensity,
+    float glowStrength,
+    float edgeLighting
+) {
+    vec2 halfBlurSize = blurSize * 0.5;
+    float minHalfSize = min(halfBlurSize.x, halfBlurSize.y);
+
+    vec2 position = windowUV * blurSize - halfBlurSize.xy;
+    position.y = -position.y;
+    float dist = roundedRectangleDist(position, halfBlurSize, cornerRadius);
+
+    if (dist > 0.0) {
+        return baseColor;
+    }
+
+    vec2 uv_min = vec2(0.0);
+    vec2 uv_max = vec2(1.0);
+
+    float minEsp = clamp(minHalfSize * lg_edge_thickness, 0.1, minHalfSize * 0.9);
+    float edgeFactor = 1.0 - clamp(abs(dist) / minEsp, 0.0, 1.0);
+    float concaveFactor = 1.0 - sqrt(max(0.0, 1.0 - pow(smoothstep(0.0, 1.0, edgeFactor), refractionNormalPow)));
+
+    GlassFragment s;
+    if (refractionStrength > 0.0) {
+        vec4 r = clamp(cornerRadius * 2.0, min(64.0 * niri_scale, minHalfSize), min(128.0 * niri_scale, minHalfSize));
+        s = kwinSnellsRefraction(
+            uv_tex, uv_min, uv_max, position, halfBlurSize, r, uvScale,
+            minHalfSize, dist, edgeFactor, concaveFactor,
+            refractionStrength, refractionBevelIntensity, refractionOffsetStrength, refractionRGBFringing
+        );
+    } else {
+        s = GlassFragment(baseColor, dist, edgeFactor, concaveFactor, vec3(0.0, 0.0, 1.0), 1.0);
+    }
+
+    vec3 rgb = s.concaveFactor < 1.0 ? kwinGlassGlow(position, s, glowStrength, edgeLighting) : s.color.rgb;
+    s.color.rgb = rgb;
+    rgb = kwinGlassOutline(position, blurSize, s, glowStrength);
+
+    // Oklab saturation or standard saturation
+    if (lg_oklab_saturation > 0.5) {
+        rgb = oklabSaturate(rgb, lg_saturation);
+    } else if (abs(lg_saturation - 1.0) > 0.01) {
+        float lum = dot(rgb, vec3(0.2126, 0.7152, 0.0722));
+        rgb = clamp(mix(vec3(lum), rgb, lg_saturation), 0.0, 1.0);
+    }
+
+    if (abs(lg_brightness - 1.0) > 0.01) {
+        rgb *= lg_brightness;
+    }
+    if (abs(lg_contrast - 1.0) > 0.01) {
+        rgb = clamp(mix(vec3(0.5), rgb, lg_contrast), 0.0, 1.0);
+    }
+
+    return vec4(rgb, s.color.a);
 }
 
 // Snell's Law Optical Refraction -- Faithful port of kwin-effects-glass snells-glass.glsl
@@ -559,33 +799,53 @@ void main() {
         vec2 texPixels = max(vec2(length(dU) * winSize.x, length(dV) * winSize.y), vec2(1.0));
         vec2 uvScale = 1.0 / texPixels;
 
-        // Dynamic liquidity-aware strength normalization:
-        // At liq = 0.0: standard normalized 0.05 scaling (preserves existing configs).
-        // At liq = 1.0: unlocks deep optical refraction (0.22 scale) matching liquid_enough.png water droplet.
-        // At liq > 1.0: allows extreme fluid distortion scaling up to 3.0.
-        float liq = clamp(lg_liquidity, 0.0, 3.0);
-        float baseNormStrength = clamp(lg_refraction_strength * 0.05, 0.0, 1.0);
-        float normStrength = mix(baseNormStrength, clamp(lg_refraction_strength * 0.22, 0.1, 2.5), min(liq, 1.0));
-        if (liq > 1.0) {
-            normStrength *= (1.0 + (liq - 1.0) * 0.6);
-        }
+        vec4 result;
+        if (lg_mode > 0.5) {
+            // Authentic KWin Glass Shader Pipeline
+            result = kwin_glass_effect(
+                v_coords,       // uv_tex
+                windowUV,       // window UV [0, 1]
+                color,
+                winSize,        // actual unpadded window size
+                corner_radius,  // vec4(TL, TR, BR, BL)
+                uvScale,        // isotropic physical pixel-to-UV scale
+                lg_refraction_strength,
+                lg_power_factor,
+                lg_fringing,
+                lg_offset_strength,
+                lg_bevel_intensity,
+                lg_glow_weight,
+                lg_edge_lighting
+            );
+        } else {
+            // Dynamic liquidity-aware strength normalization:
+            // At liq = 0.0: standard normalized 0.05 scaling (preserves existing configs).
+            // At liq = 1.0: unlocks deep optical refraction (0.22 scale) matching liquid_enough.png water droplet.
+            // At liq > 1.0: allows extreme fluid distortion scaling up to 3.0.
+            float liq = clamp(lg_liquidity, 0.0, 3.0);
+            float baseNormStrength = clamp(lg_refraction_strength * 0.05, 0.0, 1.0);
+            float normStrength = mix(baseNormStrength, clamp(lg_refraction_strength * 0.22, 0.1, 2.5), min(liq, 1.0));
+            if (liq > 1.0) {
+                normStrength *= (1.0 + (liq - 1.0) * 0.6);
+            }
 
-        vec4 result = glass_effect(
-            v_coords,       // uv_tex
-            windowUV,       // window UV [0, 1]
-            color,
-            winSize,        // actual unpadded window size
-            corner_radius,  // vec4(TL, TR, BR, BL)
-            uvScale,        // isotropic physical pixel-to-UV scale
-            normStrength,
-            lg_power_factor,
-            lg_fringing,
-            lg_refraction_power,
-            lg_refraction_power,
-            lg_physical_refraction,
-            lg_glow_weight,
-            lg_edge_lighting
-        );
+            result = glass_effect(
+                v_coords,       // uv_tex
+                windowUV,       // window UV [0, 1]
+                color,
+                winSize,        // actual unpadded window size
+                corner_radius,  // vec4(TL, TR, BR, BL)
+                uvScale,        // isotropic physical pixel-to-UV scale
+                normStrength,
+                lg_power_factor,
+                lg_fringing,
+                lg_refraction_power,
+                lg_refraction_power,
+                lg_physical_refraction,
+                lg_glow_weight,
+                lg_edge_lighting
+            );
+        }
         color = result;
     } else {
         // Fallback when liquid-glass is disabled: apply standard niri corner rounding
