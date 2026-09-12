@@ -196,13 +196,18 @@ if [ "$INSTALL_PREBUILT" = "true" ]; then
 
     # Ensure runtime library compatibility (e.g. libdisplay-info.so.1)
     if [ "$BINARY_INSTALLED" = "true" ]; then
-      if ! /usr/local/bin/lniri --version >/dev/null 2>&1; then
-        echo -e "==> Setting up display-info runtime compatibility..."
-        FOUND_LIB="$(find /usr/lib /usr/lib64 /usr/lib/x86_64-linux-gnu /usr/local/lib -name "libdisplay-info.so*" 2>/dev/null | grep -E '\.so(\.[0-9]+)*$' | head -n1)"
-        if [ -n "$FOUND_LIB" ]; then
-          sudo ln -sf "$FOUND_LIB" /usr/local/lib/libdisplay-info.so.1
-          sudo ldconfig 2>/dev/null || true
+      mkdir -p "$HOME/.local/lib"
+      FOUND_LIB="$(find /usr/lib /usr/lib64 /usr/lib/x86_64-linux-gnu /usr/local/lib -name "libdisplay-info.so*" 2>/dev/null | grep -E '\.so(\.[0-9]+)*$' | head -n1)"
+      if [ -n "$FOUND_LIB" ]; then
+        echo -e "==> Ensuring display-info runtime compatibility for $FOUND_LIB..."
+        ln -sf "$FOUND_LIB" "$HOME/.local/lib/libdisplay-info.so.1" 2>/dev/null || true
+        sudo ln -sf "$FOUND_LIB" /usr/local/lib/libdisplay-info.so.1 2>/dev/null || true
+        LIB_DIR="$(dirname "$FOUND_LIB")"
+        sudo ln -sf "$FOUND_LIB" "$LIB_DIR/libdisplay-info.so.1" 2>/dev/null || true
+        if [ -d "/etc/ld.so.conf.d" ]; then
+          echo "/usr/local/lib" | sudo tee /etc/ld.so.conf.d/lniri-local-lib.conf >/dev/null 2>&1 || true
         fi
+        sudo ldconfig 2>/dev/null || true
       fi
     fi
   fi
@@ -306,22 +311,29 @@ fi
 echo -e "==> Installing session script /usr/local/bin/lniri-session..."
 if [ -f "$OVERLAY_SRC_DIR/resources/lniri-session" ]; then
   sudo install -Dm755 "$OVERLAY_SRC_DIR/resources/lniri-session" /usr/local/bin/lniri-session
+  sudo ln -sf /usr/local/bin/lniri-session /usr/bin/lniri-session 2>/dev/null || true
 elif [ -f "/usr/bin/niri-session" ]; then
   sudo install -m 755 /usr/bin/niri-session /usr/local/bin/lniri-session
   sudo sed -i \
     -e 's|niri --session|lniri --session|g' \
     -e 's|niri\.service|lniri.service|g' \
     /usr/local/bin/lniri-session
+  sudo ln -sf /usr/local/bin/lniri-session /usr/bin/lniri-session 2>/dev/null || true
 fi
 
 # 9. Register systemd user unit
 echo -e "==> Installing systemd user units..."
 mkdir -p "$HOME/.local/share/systemd/user"
+mkdir -p "$HOME/.config/systemd/user"
 if [ -f "$OVERLAY_SRC_DIR/resources/lniri.service" ]; then
   install -Dm644 "$OVERLAY_SRC_DIR/resources/lniri.service" "$HOME/.local/share/systemd/user/lniri.service"
+  install -Dm644 "$OVERLAY_SRC_DIR/resources/lniri.service" "$HOME/.config/systemd/user/lniri.service"
+  sudo install -Dm644 "$OVERLAY_SRC_DIR/resources/lniri.service" /usr/lib/systemd/user/lniri.service 2>/dev/null || sudo install -Dm644 "$OVERLAY_SRC_DIR/resources/lniri.service" /etc/systemd/user/lniri.service 2>/dev/null || true
 fi
 if [ -f "$OVERLAY_SRC_DIR/resources/lniri-shutdown.target" ]; then
   install -Dm644 "$OVERLAY_SRC_DIR/resources/lniri-shutdown.target" "$HOME/.local/share/systemd/user/lniri-shutdown.target"
+  install -Dm644 "$OVERLAY_SRC_DIR/resources/lniri-shutdown.target" "$HOME/.config/systemd/user/lniri-shutdown.target"
+  sudo install -Dm644 "$OVERLAY_SRC_DIR/resources/lniri-shutdown.target" /usr/lib/systemd/user/lniri-shutdown.target 2>/dev/null || sudo install -Dm644 "$OVERLAY_SRC_DIR/resources/lniri-shutdown.target" /etc/systemd/user/lniri-shutdown.target 2>/dev/null || true
 fi
 systemctl --user daemon-reload 2>/dev/null || true
 

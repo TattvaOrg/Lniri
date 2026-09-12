@@ -101,9 +101,11 @@ jobs:
 
       - name: Build Release Binary
         run: |
+          sudo apt-get install -y patchelf
           cd upstream-niri
           cargo build --release --bin niri
           strip target/release/niri
+          patchelf --set-rpath '$ORIGIN:$ORIGIN/../lib:$ORIGIN/lib:/usr/local/lib:/usr/lib64:/usr/lib:/usr/lib/x86_64-linux-gnu' target/release/niri
 
       - name: Prepare Binary Package Assets
         run: |
