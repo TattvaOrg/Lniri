@@ -104,7 +104,7 @@ jobs:
           mkdir -p "dist/bundle/$PKG_NAME"
           cp dist/lniri "dist/bundle/$PKG_NAME/"
           cp -r resources "dist/bundle/$PKG_NAME/"
-          cp README.md LICENSE "dist/bundle/$PKG_NAME/"
+          cp README.md LICENSE shaders.md template.md "dist/bundle/$PKG_NAME/"
           tar -czf "dist/$PKG_NAME.tar.gz" -C dist/bundle "$PKG_NAME"
           rm -rf dist/bundle
 
