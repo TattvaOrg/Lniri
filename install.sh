@@ -3,7 +3,7 @@ set -e
 
 # ==============================================================================
 # Lniri - Liquid Glass Compositor Installer & Updater
-# Repository: https://github.com/AbsolOrg/Lniri
+# Repository: https://github.com/TattvaOrg/Lniri
 # ==============================================================================
 
 BOLD="\033[1m"
@@ -97,7 +97,7 @@ fi
 
 # 2.5 Architecture detection & Pre-compiled GitHub Release Fast-Path
 ARCH="$(uname -m)"
-LNIRI_REPO="${LNIRI_REPO:-AbsolOrg/Lniri}"
+LNIRI_REPO="${LNIRI_REPO:-TattvaOrg/Lniri}"
 INSTALL_PREBUILT=true
 for arg in "$@"; do
   if [ "$arg" = "--source" ] || [ "$arg" = "--build-from-source" ]; then

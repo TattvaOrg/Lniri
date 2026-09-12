@@ -101,13 +101,16 @@ jobs:
 
           # Create distribution tarball with resources and systemd files
           PKG_NAME="lniri-${{ matrix.arch }}"
-          mkdir -p "dist/$PKG_NAME"
-          cp dist/lniri "dist/$PKG_NAME/"
-          cp -r resources "dist/$PKG_NAME/"
-          cp README.md LICENSE "dist/$PKG_NAME/"
-          tar -czf "dist/$PKG_NAME.tar.gz" -C dist "$PKG_NAME"
-          sha256sum "dist/$PKG_NAME.tar.gz" > "dist/$PKG_NAME.tar.gz.sha256"
-          sha256sum "dist/lniri-${{ matrix.arch }}" > "dist/lniri-${{ matrix.arch }}.sha256"
+          mkdir -p "dist/bundle/$PKG_NAME"
+          cp dist/lniri "dist/bundle/$PKG_NAME/"
+          cp -r resources "dist/bundle/$PKG_NAME/"
+          cp README.md LICENSE "dist/bundle/$PKG_NAME/"
+          tar -czf "dist/$PKG_NAME.tar.gz" -C dist/bundle "$PKG_NAME"
+          rm -rf dist/bundle
+
+          cd dist
+          sha256sum "$PKG_NAME.tar.gz" > "$PKG_NAME.tar.gz.sha256"
+          sha256sum "lniri-${{ matrix.arch }}" > "lniri-${{ matrix.arch }}.sha256"
 
       - name: Upload Artifact (PR & Branches)
         uses: actions/upload-artifact@v4
