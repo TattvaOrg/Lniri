@@ -36,9 +36,9 @@ if [ "$IS_UPDATE" = "true" ]; then
   echo ""
 
   if [ -z "$TARGET_CHANNEL" ]; then
-    echo -e "Select update channel for Niri upstream codebase:"
-    echo -e "  1) ${BOLD}Main branch${RESET} (cutting-edge git commits) [Default]"
-    echo -e "  2) ${BOLD}Latest release${RESET} (stable tagged release of Niri)"
+    echo -e "Select binary release version:"
+    echo -e "  1) ${BOLD}Latest release${RESET} (stable v0.1.5) [Default]"
+    echo -e "  2) ${BOLD}Rolling main${RESET} (continuous cutting-edge binary)"
     echo ""
 
     if [ -t 0 ] || [ -c /dev/tty ]; then
@@ -48,15 +48,15 @@ if [ "$IS_UPDATE" = "true" ]; then
     fi
 
     case "$USER_CHOICE" in
-      2|release|stable)
-        TARGET_CHANNEL="release"
+      2|main|rolling)
+        TARGET_CHANNEL="main"
         ;;
       *)
-        TARGET_CHANNEL="main"
+        TARGET_CHANNEL="release"
         ;;
     esac
   fi
-  echo -e "==> Selected channel: ${GREEN}$TARGET_CHANNEL${RESET}"
+  echo -e "==> Selected binary channel: ${GREEN}$TARGET_CHANNEL${RESET}"
   echo ""
 else
   TARGET_CHANNEL="${LNIRI_CHANNEL:-main}"
@@ -113,18 +113,50 @@ if [ "$INSTALL_PREBUILT" = "true" ]; then
   echo -e "==> Checking for pre-compiled binary release from GitHub (${GREEN}$LNIRI_REPO${RESET} - $ARCH)..."
   DOWNLOAD_URL=""
 
+  # Build list of direct candidate URLs to check
+  CANDIDATE_URLS=()
   if [ -n "${LNIRI_VERSION:-}" ]; then
-    CANDIDATE_URL="https://github.com/$LNIRI_REPO/releases/download/$LNIRI_VERSION/lniri-$ARCH"
-    if curl -sI "$CANDIDATE_URL" 2>/dev/null | grep -q "302\|200"; then
-      DOWNLOAD_URL="$CANDIDATE_URL"
-    fi
+    CANDIDATE_URLS+=(
+      "https://github.com/$LNIRI_REPO/releases/download/$LNIRI_VERSION/lniri-$ARCH"
+      "https://github.com/$LNIRI_REPO/releases/download/$LNIRI_VERSION/lniri"
+      "https://github.com/$LNIRI_REPO/releases/download/$LNIRI_VERSION/lniri-$ARCH.tar.gz"
+      "https://github.com/$LNIRI_REPO/releases/download/v$LNIRI_VERSION/lniri-$ARCH"
+    )
   fi
 
+  if [ "$TARGET_CHANNEL" = "main" ]; then
+    CANDIDATE_URLS+=(
+      "https://github.com/$LNIRI_REPO/releases/download/rolling/lniri-$ARCH"
+      "https://github.com/$LNIRI_REPO/releases/download/rolling/lniri"
+      "https://github.com/$LNIRI_REPO/releases/download/rolling/lniri-$ARCH.tar.gz"
+      "https://github.com/$LNIRI_REPO/releases/download/0.1.5/lniri-$ARCH"
+      "https://github.com/$LNIRI_REPO/releases/download/0.1.5/lniri"
+      "https://github.com/$LNIRI_REPO/releases/download/0.1.5/lniri-$ARCH.tar.gz"
+    )
+  else
+    CANDIDATE_URLS+=(
+      "https://github.com/$LNIRI_REPO/releases/download/0.1.5/lniri-$ARCH"
+      "https://github.com/$LNIRI_REPO/releases/download/0.1.5/lniri"
+      "https://github.com/$LNIRI_REPO/releases/download/0.1.5/lniri-$ARCH.tar.gz"
+      "https://github.com/$LNIRI_REPO/releases/latest/download/lniri-$ARCH"
+      "https://github.com/$LNIRI_REPO/releases/latest/download/lniri"
+      "https://github.com/$LNIRI_REPO/releases/download/rolling/lniri-$ARCH"
+      "https://github.com/$LNIRI_REPO/releases/download/rolling/lniri"
+    )
+  fi
+
+  for cand in "${CANDIDATE_URLS[@]}"; do
+    if curl -sIL "$cand" 2>/dev/null | grep -qE "HTTP/[123\.]* (200|302)"; then
+      DOWNLOAD_URL="$cand"
+      break
+    fi
+  done
+
+  # Fallback to GitHub API if candidate check misses
   if [ -z "$DOWNLOAD_URL" ]; then
     LATEST_JSON="$(curl -sSL "https://api.github.com/repos/$LNIRI_REPO/releases/latest" 2>/dev/null || true)"
     DOWNLOAD_URL="$(echo "$LATEST_JSON" | grep -o "https://[^\"]*releases/download/[^\"]*/lniri-$ARCH" | head -n1 || true)"
   fi
-
   if [ -z "$DOWNLOAD_URL" ]; then
     RELEASES_JSON="$(curl -sSL "https://api.github.com/repos/$LNIRI_REPO/releases" 2>/dev/null || true)"
     DOWNLOAD_URL="$(echo "$RELEASES_JSON" | grep -o "https://[^\"]*releases/download/[^\"]*/lniri-$ARCH" | head -n1 || true)"
@@ -133,20 +165,53 @@ if [ "$INSTALL_PREBUILT" = "true" ]; then
   if [ -n "$DOWNLOAD_URL" ]; then
     echo -e "==> Pre-compiled binary found: ${GREEN}$DOWNLOAD_URL${RESET}"
     echo -e "==> Downloading Lniri release binary..."
-    TMP_BIN="$(mktemp)"
-    if curl -fL --progress-bar "$DOWNLOAD_URL" -o "$TMP_BIN"; then
-      chmod +x "$TMP_BIN"
-      sudo install -Dm755 "$TMP_BIN" /usr/local/bin/lniri
-      sudo ln -sf /usr/local/bin/lniri /usr/local/bin/Lniri
-      rm -f "$TMP_BIN"
-      echo -e "==> Pre-compiled binary successfully installed to ${GREEN}/usr/local/bin/lniri${RESET}!"
-      BINARY_INSTALLED=true
+
+    if [[ "$DOWNLOAD_URL" == *.tar.gz ]]; then
+      TMP_DIR="$(mktemp -d)"
+      if curl -fL --progress-bar "$DOWNLOAD_URL" -o "$TMP_DIR/bundle.tar.gz"; then
+        tar -xzf "$TMP_DIR/bundle.tar.gz" -C "$TMP_DIR"
+        FOUND_BIN="$(find "$TMP_DIR" -type f \( -name "lniri" -o -name "lniri-$ARCH" \) | head -n1)"
+        if [ -n "$FOUND_BIN" ]; then
+          chmod +x "$FOUND_BIN"
+          sudo install -Dm755 "$FOUND_BIN" /usr/local/bin/lniri
+          sudo ln -sf /usr/local/bin/lniri /usr/local/bin/Lniri
+          echo -e "==> Pre-compiled binary successfully installed to ${GREEN}/usr/local/bin/lniri${RESET}!"
+          BINARY_INSTALLED=true
+        fi
+      fi
+      rm -rf "$TMP_DIR"
     else
-      rm -f "$TMP_BIN"
-      echo -e "${YELLOW}==> Binary download failed. Falling back to source compilation...${RESET}"
+      TMP_BIN="$(mktemp)"
+      if curl -fL --progress-bar "$DOWNLOAD_URL" -o "$TMP_BIN"; then
+        chmod +x "$TMP_BIN"
+        sudo install -Dm755 "$TMP_BIN" /usr/local/bin/lniri
+        sudo ln -sf /usr/local/bin/lniri /usr/local/bin/Lniri
+        rm -f "$TMP_BIN"
+        echo -e "==> Pre-compiled binary successfully installed to ${GREEN}/usr/local/bin/lniri${RESET}!"
+        BINARY_INSTALLED=true
+      else
+        rm -f "$TMP_BIN"
+      fi
     fi
-  else
-    echo -e "==> No precompiled binary found for $ARCH. Falling back to source compilation..."
+
+    # Ensure runtime library compatibility (e.g. libdisplay-info.so.1)
+    if [ "$BINARY_INSTALLED" = "true" ]; then
+      if ! /usr/local/bin/lniri --version >/dev/null 2>&1; then
+        echo -e "==> Setting up display-info runtime compatibility..."
+        FOUND_LIB="$(find /usr/lib /usr/lib64 /usr/lib/x86_64-linux-gnu /usr/local/lib -name "libdisplay-info.so*" 2>/dev/null | grep -E '\.so(\.[0-9]+)*$' | head -n1)"
+        if [ -n "$FOUND_LIB" ]; then
+          sudo ln -sf "$FOUND_LIB" /usr/local/lib/libdisplay-info.so.1
+          sudo ldconfig 2>/dev/null || true
+        fi
+      fi
+    fi
+  fi
+
+  if [ "$BINARY_INSTALLED" = "false" ]; then
+    echo -e "${YELLOW}==> Warning: No pre-compiled binary could be downloaded for $ARCH from GitHub releases.${RESET}"
+    echo -e "By default, Lniri installs pre-built binaries in seconds and avoids compiling on your system."
+    echo -e "If you wish to force compiling from source, please re-run with: ${BOLD}$0 --source${RESET}"
+    exit 1
   fi
 fi
 

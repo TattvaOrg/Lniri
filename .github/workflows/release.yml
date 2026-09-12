@@ -136,10 +136,14 @@ jobs:
             dist/*.sha256
 
       - name: Upload to GitHub Release
-        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'release'
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || (github.event_name == 'release' && github.event.release.tag_name || 'rolling') }}
+          name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || (github.event_name == 'release' && github.event.release.name || 'Lniri Rolling (main)') }}
+          prerelease: ${{ github.ref == 'refs/heads/main' }}
           files: |
+            dist/lniri
             dist/lniri-${{ matrix.arch }}
             dist/lniri-${{ matrix.arch }}.tar.gz
             dist/*.sha256
