@@ -40,16 +40,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/TattvaOrg/Lniri/main/ins
    # or
    Lniri
    ```
-
----
-
-## Gallery & Effects
-
-### Dynamic Glass & Wallpaper Reflections
-
-
-### Video Demo (Live Wallpaper + Shadows)
-
+   
 ---
 
 ## Configuration & Terminal Setup
