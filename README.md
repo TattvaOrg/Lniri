@@ -46,7 +46,9 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/TattvaOrg/Lniri/main/ins
 ## Configuration & Terminal Setup
 
 > **Looking for complete terminal configs (Alacritty, Kitty, Ghostty), wallpaper daemon setups, and ready-to-use presets?**  
-> Check out the [**Complete Setup Template & Guide (template.md)**](template.md).
+> Check out the [**Complete Setup Template & Guide (template.md)**](template.md).  
+> **Looking for detailed shader optics, KWin Glass presets, and parameters?**  
+> See the [**Shader Guide & Reference (shaders.md)**](shaders.md).
 
 Lniri reads standard Niri configuration files in the following order:
 1. `~/.config/lniri/config.kdl`

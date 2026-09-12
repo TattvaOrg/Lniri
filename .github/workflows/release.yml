@@ -54,20 +54,33 @@ jobs:
       - name: Setup Rust Toolchain
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Cache Rust Dependencies
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: upstream-niri -> target
-
       - name: Clone Upstream Niri
         run: |
-          git clone https://github.com/niri-wm/niri.git upstream-niri
-          cd upstream-niri
+          if [ -d "upstream-niri/.git" ]; then
+            cd upstream-niri
+            git fetch --tags
+          elif [ -d "upstream-niri" ]; then
+            mkdir -p /tmp/cached-data
+            mv upstream-niri/* /tmp/cached-data/ 2>/dev/null || true
+            rm -rf upstream-niri
+            git clone https://github.com/niri-wm/niri.git upstream-niri
+            cp -rn /tmp/cached-data/* upstream-niri/ 2>/dev/null || true
+            rm -rf /tmp/cached-data
+            cd upstream-niri
+          else
+            git clone https://github.com/niri-wm/niri.git upstream-niri
+            cd upstream-niri
+          fi
           LATEST_TAG=$(git tag -l 'v*' --sort=-v:refname | head -n1)
           if [ -n "$LATEST_TAG" ]; then
             echo "Checking out upstream tag: $LATEST_TAG"
             git checkout "$LATEST_TAG"
           fi
+
+      - name: Cache Rust Dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: upstream-niri -> target
 
       - name: Apply Lniri Liquid Glass & KWin Glass Overlay
         run: |
@@ -104,7 +117,7 @@ jobs:
           mkdir -p "dist/bundle/$PKG_NAME"
           cp dist/lniri "dist/bundle/$PKG_NAME/"
           cp -r resources "dist/bundle/$PKG_NAME/"
-          cp README.md LICENSE "dist/bundle/$PKG_NAME/"
+          cp README.md LICENSE shaders.md template.md "dist/bundle/$PKG_NAME/"
           tar -czf "dist/$PKG_NAME.tar.gz" -C dist/bundle "$PKG_NAME"
           rm -rf dist/bundle
 
