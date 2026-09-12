@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# Export library paths for runtime compatibility across distros
+export LD_LIBRARY_PATH="/usr/local/lib:$HOME/.local/lib:${LD_LIBRARY_PATH:-}"
+
 # Detect if being run as a user service, which implies external session management,
 # exec compositor directly
 if [ -n "${MANAGERPID:-}" ] && [ "${SYSTEMD_EXEC_PID:-}" = "$$" ]; then
@@ -34,6 +37,7 @@ if hash systemctl >/dev/null 2>&1; then
 
     # Import the login manager environment.
     systemctl --user import-environment
+    systemctl --user import-environment LD_LIBRARY_PATH
 
     # DBus activation environment is independent from systemd. While most of
     # dbus-activated services are already using `SystemdService` directive, some
