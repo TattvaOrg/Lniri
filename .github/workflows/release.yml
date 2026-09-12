@@ -1,0 +1,131 @@
+name: Build & Release Binary
+
+on:
+  push:
+    tags:
+      - '*'
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Lniri Binary (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+            arch: x86_64
+
+    steps:
+      - name: Checkout Lniri Overlay
+        uses: actions/checkout@v4
+
+      - name: Install System Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            clang \
+            pkg-config \
+            libxkbcommon-dev \
+            libinput-dev \
+            libseat-dev \
+            libpango1.0-dev \
+            libcairo2-dev \
+            libpipewire-0.3-dev \
+            libsystemd-dev \
+            libwayland-dev \
+            libgbm-dev \
+            libdisplay-info-dev \
+            libudev-dev
+
+      - name: Setup Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust Dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: upstream-niri -> target
+
+      - name: Clone Upstream Niri
+        run: |
+          git clone https://github.com/niri-wm/niri.git upstream-niri
+          cd upstream-niri
+          LATEST_TAG=$(git tag -l 'v*' --sort=-v:refname | head -n1)
+          if [ -n "$LATEST_TAG" ]; then
+            echo "Checking out upstream tag: $LATEST_TAG"
+            git checkout "$LATEST_TAG"
+          fi
+
+      - name: Apply Lniri Liquid Glass & KWin Glass Overlay
+        run: |
+          OVERLAY_DIR="$GITHUB_WORKSPACE"
+          TARGET_DIR="$GITHUB_WORKSPACE/upstream-niri"
+
+          cp -f "$OVERLAY_DIR/src/render_helpers/liquid_glass.rs" "$TARGET_DIR/src/render_helpers/"
+          cp -f "$OVERLAY_DIR/src/render_helpers/background_effect.rs" "$TARGET_DIR/src/render_helpers/"
+          cp -f "$OVERLAY_DIR/src/render_helpers/framebuffer_effect.rs" "$TARGET_DIR/src/render_helpers/"
+          cp -f "$OVERLAY_DIR/src/render_helpers/xray.rs" "$TARGET_DIR/src/render_helpers/"
+          cp -f "$OVERLAY_DIR/src/render_helpers/mod.rs" "$TARGET_DIR/src/render_helpers/"
+          cp -f "$OVERLAY_DIR/src/render_helpers/shaders/clipped_surface.frag" "$TARGET_DIR/src/render_helpers/shaders/"
+          cp -f "$OVERLAY_DIR/src/render_helpers/shaders/mod.rs" "$TARGET_DIR/src/render_helpers/shaders/"
+          cp -f "$OVERLAY_DIR/niri-config/src/appearance.rs" "$TARGET_DIR/niri-config/src/"
+          if [ -f "$OVERLAY_DIR/src/layer/mapped.rs" ]; then
+            cp -f "$OVERLAY_DIR/src/layer/mapped.rs" "$TARGET_DIR/src/layer/"
+          fi
+
+      - name: Build Release Binary
+        run: |
+          cd upstream-niri
+          cargo build --release --bin niri
+          strip target/release/niri
+
+      - name: Prepare Binary Package Assets
+        run: |
+          mkdir -p dist
+          cp upstream-niri/target/release/niri dist/lniri
+          chmod +x dist/lniri
+          cp dist/lniri dist/lniri-${{ matrix.arch }}
+
+          # Create distribution tarball with resources and systemd files
+          PKG_NAME="lniri-${{ matrix.arch }}"
+          mkdir -p "dist/$PKG_NAME"
+          cp dist/lniri "dist/$PKG_NAME/"
+          cp -r resources "dist/$PKG_NAME/"
+          cp README.md LICENSE "dist/$PKG_NAME/"
+          tar -czf "dist/$PKG_NAME.tar.gz" -C dist "$PKG_NAME"
+          sha256sum "dist/$PKG_NAME.tar.gz" > "dist/$PKG_NAME.tar.gz.sha256"
+          sha256sum "dist/lniri-${{ matrix.arch }}" > "dist/lniri-${{ matrix.arch }}.sha256"
+
+      - name: Upload Artifact (PR & Branches)
+        uses: actions/upload-artifact@v4
+        with:
+          name: lniri-${{ matrix.arch }}
+          path: |
+            dist/lniri
+            dist/lniri-${{ matrix.arch }}
+            dist/*.tar.gz
+            dist/*.sha256
+
+      - name: Upload to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/lniri-${{ matrix.arch }}
+            dist/lniri-${{ matrix.arch }}.tar.gz
+            dist/*.sha256
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

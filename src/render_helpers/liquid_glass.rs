@@ -27,6 +27,10 @@ pub struct LiquidGlassOptions {
     pub adaptive_boost: f64,
     pub edge_thickness: f64,
     pub edge_padding: f64,
+    pub mode: f64,
+    pub refraction_bevel_intensity: f64,
+    pub refraction_offset_strength: f64,
+    pub oklab_saturation: f64,
 }
 
 impl From<niri_config::LiquidGlass> for LiquidGlassOptions {
@@ -59,6 +63,13 @@ impl From<niri_config::LiquidGlass> for LiquidGlassOptions {
             adaptive_boost: config.adaptive_boost,
             edge_thickness: config.edge_thickness,
             edge_padding: config.edge_padding,
+            mode: match config.mode {
+                niri_config::LiquidGlassMode::Liquid => 0.0,
+                niri_config::LiquidGlassMode::KwinGlass => 1.0,
+            },
+            refraction_bevel_intensity: config.refraction_bevel_intensity,
+            refraction_offset_strength: config.refraction_offset_strength,
+            oklab_saturation: config.oklab_saturation,
         }
     }
 }

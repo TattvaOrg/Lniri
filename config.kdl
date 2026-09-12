@@ -1,25 +1,37 @@
-// Lniri Configuration Example with Liquid Glass effect enabled
+// Lniri Configuration Example with Liquid & KWin Glass effects
 // Copy or symlink to ~/.config/lniri/config.kdl (or ~/.config/niri/config.kdl)
 
+// ============================================================================
+// WINDOW RULES
+// ============================================================================
+
+// Window Rule with KWin Glass Effect (Default: Authentic KWin Glass)
 window-rule {
     match app-id=".*"
     background-effect {
         blur true
         xray true
         liquid-glass {
-            liquidity 0.8
-            refraction-strength 4.0
-            power-factor 3.5
-            refraction-power 1.5
-            glow-weight 0.0
-            edge-lighting 0.0
-            saturation 1.15
-            vibrancy 0.35
-            adaptive-dim 0.0
-            adaptive-boost 0.0
-            physical-refraction 1.0
-            lens-distortion 0.15
-            fringing 0.45
+            // Engine mode: "kwin-glass" (authentic kwin-effects-glass) or "liquid" (water-drop fluid)
+            mode "kwin-glass"
+
+            // Refraction & Bevel Optics
+            refraction-strength 4.0          // Optical refraction strength (IOR = 1.0 + strength)
+            power-factor 3.0                 // Curvature steepness (RefractionNormalPow)
+            refraction-bevel-intensity 10.0  // Caustic bevel depth & lens magnitude
+            refraction-offset-strength 8.0   // Corner optical shift factor
+            edge-thickness 0.18              // Meniscus / bevel border width
+            fringing 0.45                    // Cauchy chromatic dispersion (RGB fringing)
+
+            // Outline & Lighting
+            glow-weight 0.20                 // Dual-highlight / shadow rim profile intensity
+            edge-lighting 0.6                // Natural wallpaper edge illumination
+
+            // Perceptual Color Pipeline
+            oklab-saturation 1.0             // 1.0 = enable Oklab color-space saturation
+            saturation 1.15                  // Perceptual color saturation
+            brightness 1.0                   // Brightness adjustment
+            contrast 1.0                     // Contrast adjustment
         }
     }
 }
@@ -34,18 +46,70 @@ layer-rule {
         blur true
         xray true // Set xray false if you want the bar to refract windows underneath
         liquid-glass {
-            liquidity 0.7
-            refraction-strength 5.0
-            power-factor 3.5
-            refraction-power 1.8
+            mode "kwin-glass"
+            refraction-strength 4.5
+            power-factor 3.2
+            refraction-bevel-intensity 12.0
+            refraction-offset-strength 8.0
             edge-thickness 0.20
-            edge-lighting 0.8
-            glow-weight 0.0
-            saturation 1.2
-            vibrancy 0.35
-            physical-refraction 1.0
             fringing 0.45
+            edge-lighting 0.8
+            glow-weight 0.25
+            oklab-saturation 1.0
+            saturation 1.2
         }
     }
 }
+
+// ============================================================================
+// ALTERNATIVE CURATED PRESETS (Copy any block into your window-rule above)
+// ============================================================================
+
+// Preset A: Original Fluid Water-Drop (Liquid Glass Engine)
+// liquid-glass {
+//     mode "liquid"
+//     liquidity 0.8
+//     refraction-strength 4.0
+//     power-factor 3.5
+//     refraction-power 1.5
+//     glow-weight 0.0
+//     edge-lighting 0.0
+//     saturation 1.15
+//     vibrancy 0.35
+//     physical-refraction 1.0
+//     lens-distortion 0.15
+//     fringing 0.45
+// }
+
+// Preset B: Frosted KWin Glass (Minimal reflection, clean crystal bevel)
+// liquid-glass {
+//     mode "kwin-glass"
+//     refraction-strength 2.5
+//     power-factor 2.5
+//     refraction-bevel-intensity 8.0
+//     refraction-offset-strength 6.0
+//     edge-thickness 0.15
+//     fringing 0.25
+//     glow-weight 0.0
+//     edge-lighting 0.0
+//     oklab-saturation 1.0
+//     saturation 1.05
+//     brightness 1.02
+// }
+
+// Preset C: Cyberpunk Neon Rim (Pronounced glowing glass bevel)
+// liquid-glass {
+//     mode "kwin-glass"
+//     refraction-strength 5.0
+//     power-factor 3.5
+//     refraction-bevel-intensity 14.0
+//     refraction-offset-strength 10.0
+//     edge-thickness 0.22
+//     fringing 0.65
+//     glow-weight 0.60
+//     edge-lighting 1.2
+//     oklab-saturation 1.0
+//     saturation 1.25
+// }
+
 

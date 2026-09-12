@@ -124,6 +124,10 @@ impl Shaders {
                     UniformName::new("lg_adaptive_boost", UniformType::_1f),
                     UniformName::new("lg_edge_thickness", UniformType::_1f),
                     UniformName::new("lg_padding_pixels", UniformType::_1f),
+                    UniformName::new("lg_mode", UniformType::_1f),
+                    UniformName::new("lg_bevel_intensity", UniformType::_1f),
+                    UniformName::new("lg_offset_strength", UniformType::_1f),
+                    UniformName::new("lg_oklab_saturation", UniformType::_1f),
                 ],
             )
             .map_err(|err| {
@@ -173,6 +177,10 @@ impl Shaders {
                     UniformName::new("lg_adaptive_boost", UniformType::_1f),
                     UniformName::new("lg_edge_thickness", UniformType::_1f),
                     UniformName::new("lg_padding_pixels", UniformType::_1f),
+                    UniformName::new("lg_mode", UniformType::_1f),
+                    UniformName::new("lg_bevel_intensity", UniformType::_1f),
+                    UniformName::new("lg_offset_strength", UniformType::_1f),
+                    UniformName::new("lg_oklab_saturation", UniformType::_1f),
                 ],
             )
             .map_err(|err| {

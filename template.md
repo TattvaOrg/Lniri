@@ -402,7 +402,85 @@ swww img /path/to/wallpaper.png --transition-type wipe --transition-duration 2
 
 Swap the `liquid-glass { ... }` block in your `config.kdl` to match your personal aesthetic preference:
 
-### Preset 1: Dolphin Frosted Glass (Reference Look from dolphin.png & kwin-effects-glass)
+### Preset 1: Authentic KWin Glass (Faithful Port of kwin-effects-glass)
+*Exact mathematical implementation of Snell's Law refraction, caustic bevel normals, corner optical distortion, dual-highlight/shadow rim outlines, and Oklab color space saturation from `kwin-effects-glass`.*
+
+```kdl
+background-effect {
+    blur true
+    xray true
+    liquid-glass {
+        mode "kwin-glass"
+        refraction-strength 4.0
+        power-factor 3.0
+        refraction-bevel-intensity 10.0
+        refraction-offset-strength 8.0
+        edge-thickness 0.18
+        fringing 0.45
+        glow-weight 0.20
+        edge-lighting 0.6
+        oklab-saturation 1.0
+        saturation 1.15
+        brightness 1.0
+        contrast 1.0
+    }
+}
+```
+
+---
+
+### Preset 2: Frosted KWin Glass (Subtle Beveled Crystal)
+*Minimal reflection, razor-sharp clean crystal bevels, and Oklab saturation with zero glare.*
+
+```kdl
+background-effect {
+    blur true
+    xray true
+    liquid-glass {
+        mode "kwin-glass"
+        refraction-strength 2.5
+        power-factor 2.5
+        refraction-bevel-intensity 8.0
+        refraction-offset-strength 6.0
+        edge-thickness 0.15
+        fringing 0.25
+        glow-weight 0.0
+        edge-lighting 0.0
+        oklab-saturation 1.0
+        saturation 1.05
+        brightness 1.02
+    }
+}
+```
+
+---
+
+### Preset 3: Cyberpunk Neon Rim (Glowing Refractive Glass)
+*Vivid edge illumination and dual highlight/shadow rim masks with rich chromatic dispersion.*
+
+```kdl
+background-effect {
+    blur true
+    xray true
+    liquid-glass {
+        mode "kwin-glass"
+        refraction-strength 5.0
+        power-factor 3.5
+        refraction-bevel-intensity 14.0
+        refraction-offset-strength 10.0
+        edge-thickness 0.22
+        fringing 0.65
+        glow-weight 0.60
+        edge-lighting 1.2
+        oklab-saturation 1.0
+        saturation 1.25
+    }
+}
+```
+
+---
+
+### Preset 4: Dolphin Frosted Glass (Reference Look from dolphin.png)
 *Deep dual-filter background blur with Snell's law optical refraction, smooth chromatic dispersion along curved borders, and natural beveled specular highlights.*
 
 ```kdl
@@ -412,6 +490,7 @@ background-effect {
     blur true
     xray true
     liquid-glass {
+        mode "liquid"
         liquidity 0.8
         refraction-strength 4.0
         power-factor 3.5
@@ -578,19 +657,27 @@ liquid-glass {
 
 | Parameter | Type | Typical Range | Description |
 | :--- | :--- | :--- | :--- |
-| `liquidity` | float | `0.0` – `2.0+` | Controls fluid water-drop optics intensity. `0.0` = baseline glass, `1.0` = deep liquid water droplet with optical corner curvature inflation, central wallpaper magnification, and Snell IOR boost (matches kwin-effects-glass liquid_enough.png), `2.0+` = extreme fluid distortion. |
-| `refraction-strength` | float | `1.0` – `6.0` | Overall magnitude of the background optical refraction. |
+| `mode` | string | `"kwin-glass"` or `"liquid"` | Shader engine mode. `"kwin-glass"` runs the authentic Snell's law + caustic bevel + Oklab saturation pipeline; `"liquid"` runs the organic fluid water-drop pipeline. Defaults to `"liquid"`. |
+| `liquidity` | float | `0.0` – `2.0+` | (`mode "liquid"` only) Controls fluid water-drop optics intensity. `0.0` = baseline glass, `1.0` = deep liquid water droplet with optical corner curvature inflation, central wallpaper magnification, and Snell IOR boost (matches kwin-effects-glass liquid_enough.png), `2.0+` = extreme fluid distortion. |
+| `refraction-strength` | float | `1.0` – `6.0` | Overall magnitude of the background optical refraction. In `"kwin-glass"` mode, directly determines Index of Refraction ($IOR = 1.0 + \text{strength}$). |
 | `power-factor` | float | `2.0` – `15.0` | Falloff curve from the window edge inward (lower = wider glass bevel, higher = concentrated at rim). |
-| `refraction-power` | float | `0.5` – `2.0` | Exponential power applied to the displacement vector. |
+| `refraction-bevel-intensity` | float | `1.0` – `20.0` | (`mode "kwin-glass"`) Controls caustic normal gradient steepness and lens displacement depth. Default `10.0`. |
+| `refraction-offset-strength` | float | `1.0` – `20.0` | (`mode "kwin-glass"`) Controls optical corner shift and radial curvature bending. Default `8.0`. |
+| `edge-thickness` | float | `0.05` – `0.35` | Meniscus / bevel border width relative to window dimensions. Default `0.18`. |
+| `oklab-saturation` | float | `0.0` or `1.0` | (`mode "kwin-glass"`) Set `1.0` to enable perceptually-uniform Oklab color-space saturation. |
+| `refraction-power` | float | `0.5` – `2.0` | (`mode "liquid"`) Exponential power applied to the displacement vector. |
 | `fringing` | float | `0.0` – `1.0` | Chromatic dispersion (splits red/green/blue wavelengths along refractive curves). |
 | `edge-lighting` | float | `0.0` – `1.0` | Dynamically samples and blends the background wallpaper colors onto window borders. |
-| `glow-weight` | float | `0.0` – `0.3` | Soft illuminated halo intensity along the perimeter. |
-| `saturation` | float | `0.5` – `1.5` | Color saturation multiplier of the refracted background. |
+| `glow-weight` | float | `0.0` – `0.6` | Dual-highlight and shadow rim profile intensity along the glass boundary. |
+| `saturation` | float | `0.5` – `1.5` | Color saturation multiplier of the refracted background (processed via Oklab when `oklab-saturation 1.0`). |
 | `vibrancy` | float | `0.0` – `0.5` | Color pop and luminance boosting for the glass substrate. |
 | `adaptive-dim` | float | `0.0` – `0.5` | Automatically darkens glass over very bright wallpapers to keep dark text readable. |
 | `adaptive-boost` | float | `0.0` – `0.5` | Automatically boosts luminance over dark wallpapers. |
-| `physical-refraction` | float | `0.0` or `1.0` | `0.0` = SDF normal mode (pushes outward); `1.0` = center-directed Snell mode. |
+| `physical-refraction` | float | `0.0` or `1.0` | (`mode "liquid"`) `0.0` = SDF normal mode (pushes outward); `1.0` = center-directed Snell mode. |
 | `lens-distortion` | float | `0.0` – `0.5` | Subtle fish-eye barrel distortion across the window surface. |
+
+> [!TIP]
+> **Standalone GLSL Shader**: A ready-to-inspect standalone implementation is also available in [`resources/shaders/kwin-glass.frag`](file:///home/cachy/github-p/github-based/glass/Lniri/resources/shaders/kwin-glass.frag).
 
 ---
 

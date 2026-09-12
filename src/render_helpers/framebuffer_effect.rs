@@ -163,6 +163,10 @@ impl FramebufferEffectElement {
                 Uniform::new("lg_adaptive_dim", lg.adaptive_dim as f32),
                 Uniform::new("lg_adaptive_boost", lg.adaptive_boost as f32),
                 Uniform::new("lg_edge_thickness", lg.edge_thickness as f32),
+                Uniform::new("lg_mode", lg.mode as f32),
+                Uniform::new("lg_bevel_intensity", lg.refraction_bevel_intensity as f32),
+                Uniform::new("lg_offset_strength", lg.refraction_offset_strength as f32),
+                Uniform::new("lg_oklab_saturation", lg.oklab_saturation as f32),
             ]);
         } else {
             uniforms.extend([
@@ -192,6 +196,10 @@ impl FramebufferEffectElement {
                 Uniform::new("lg_adaptive_dim", 0.0f32),
                 Uniform::new("lg_adaptive_boost", 0.0f32),
                 Uniform::new("lg_edge_thickness", 0.15f32),
+                Uniform::new("lg_mode", 0.0f32),
+                Uniform::new("lg_bevel_intensity", 10.0f32),
+                Uniform::new("lg_offset_strength", 8.0f32),
+                Uniform::new("lg_oklab_saturation", 0.0f32),
             ]);
         }
 
