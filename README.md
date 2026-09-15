@@ -7,6 +7,8 @@
 
 https://github.com/user-attachments/assets/b98440ec-ffa4-47c4-9473-23d51ceb8d4d
 
+https://github.com/user-attachments/assets/4df0c81e-beb1-4ede-903e-5af182120164
+
 ## Quick Start: One-Liner Install & Update
 
 Install Lniri or update an existing installation directly with a single command:
