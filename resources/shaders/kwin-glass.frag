@@ -167,10 +167,25 @@ GlassFragment kwinSnellsRefraction(
     float refractionRGBFringing
 ) {
     float bandWidth = clamp(minHalfSize * lg_edge_thickness, 0.1, minHalfSize * 0.9);
-    float ior = 1.0 + refractionStrength;
 
+    // In 4v3ngR/kwin-effects-glass settings.cpp, UI slider values are divided:
+    // refractionStrength = slider / 20.0, refractionBevelIntensity = slider / 10.0,
+    // refractionOffsetStrength = slider / 2.0.
+    // Support both slider values (e.g. 4.0, 10.0, 8.0) and normalized values:
+    float normStrength = refractionStrength > 1.0 ? refractionStrength * 0.05 : refractionStrength;
+    normStrength = clamp(normStrength, 0.0, 1.0);
+    float ior = 1.0 + normStrength;
+
+    float normBevel = refractionBevelIntensity > 2.0 ? refractionBevelIntensity * 0.1 : refractionBevelIntensity;
+    normBevel = clamp(normBevel, 0.1, 3.0);
+
+    float normOffset = refractionOffsetStrength > 2.0 ? refractionOffsetStrength * 0.5 : refractionOffsetStrength;
+    normOffset = clamp(normOffset, 0.0, 10.0);
+
+    // Adaptive finite difference step for clean, smooth SDF normal:
+    // Clamped to 1.5 - 5.0 physical pixels to prevent corner distortion and jagged artifacts
     float minR = min(min(cornerRadius.x, cornerRadius.y), min(cornerRadius.z, cornerRadius.w));
-    float eps = min(bandWidth * 0.75, max(minR * 0.6, 1.0));
+    float eps = clamp(minR > 1.0 ? minR * 0.25 : 2.0 * niri_scale, 1.5 * niri_scale, 5.0 * niri_scale);
     float dxp = roundedRectangleDist(position + vec2(eps, 0.0), halfBlurSize, cornerRadius);
     float dxn = roundedRectangleDist(position - vec2(eps, 0.0), halfBlurSize, cornerRadius);
     float dyp = roundedRectangleDist(position + vec2(0.0, eps), halfBlurSize, cornerRadius);
@@ -178,19 +193,22 @@ GlassFragment kwinSnellsRefraction(
     vec2 smoothGrad = vec2(dxp - dxn, dyp - dyn);
     float gradLen = length(smoothGrad);
 
-    float normalHeight = concaveFactor * refractionBevelIntensity;
+    float normalHeight = concaveFactor * normBevel;
     vec2 normalXY = gradLen > 0.001 ? (smoothGrad / gradLen) * normalHeight : vec2(0.0);
     vec3 glassNormal = normalize(vec3(normalXY, 1.0));
 
-    float lensMagnitude = concaveFactor * bandWidth * refractionBevelIntensity;
+    // Cap maximum shift to prevent sampling out-of-bounds or extreme pixelation
+    float maxShiftPx = max(minHalfSize * 0.40, 24.0 * niri_scale);
+    float lensMagnitude = min(concaveFactor * bandWidth * normBevel, maxShiftPx);
     vec2 surfaceNormal = gradLen > 0.001 ? (smoothGrad / gradLen) : vec2(1.0, 0.0);
 
+    // Corner optical displacement
     vec2 normalizedPos = position / (halfBlurSize * 2.0);
-    float cornerWeight = dot(normalizedPos, normalizedPos) * refractionOffsetStrength;
+    float cornerWeight = dot(normalizedPos, normalizedPos) * normOffset;
     surfaceNormal += normalizedPos * concaveFactor * cornerWeight;
 
-    vec2 lensShift = -surfaceNormal * lensMagnitude * uvScale;
-    float refractionMagnitude = lensMagnitude * refractionStrength;
+    vec2 lensShift = -surfaceNormal * (lensMagnitude * 0.5) * uvScale;
+    float refractionMagnitude = min(lensMagnitude * normStrength, maxShiftPx);
     vec4 color = processSample(uv_tex, glassNormal, ior, refractionRGBFringing, refractionMagnitude, uvScale, lensShift);
 
     return GlassFragment(color, dist, edgeFactor, concaveFactor, glassNormal, ior);
@@ -205,9 +223,9 @@ vec3 kwinGlassGlow(vec2 position, GlassFragment s, float glowStrength, float edg
     vec3 glowColor = vec3(1.0);
     vec3 glow = mix(s.color.rgb, glowColor, rimMask);
     if (edgeLighting > 0.0) {
-        glow += (s.color.rgb * s.concaveFactor * edgeLighting);
+        glow += (s.color.rgb * s.concaveFactor * edgeLighting * 0.5);
     }
-    return glow;
+    return clamp(glow, 0.0, 1.0);
 }
 
 // ----------------------------------------------------------------------------
@@ -220,8 +238,8 @@ vec3 kwinGlassOutline(vec2 position, vec2 blurSize, GlassFragment s, float glowS
     if (glowStrength > 0.0) {
         float edgeMask = smoothstep(0.0, -2.0 * niri_scale, s.dist);
         float borderInner = smoothstep(-1.0 * niri_scale, -3.0 * niri_scale, s.dist);
-        float edgeProfile = edgeMask - borderInner;
-        float thicknessShadow = pow(max(edgeProfile, 0.0), 0.9);
+        float edgeProfile = max(edgeMask - borderInner, 0.0);
+        float thicknessShadow = pow(edgeProfile, 0.9);
         float shadowMask = smoothstep(blurSize.y * 0.7, -blurSize.y * 0.7, position.y) *
                            smoothstep(blurSize.x * 0.7, -blurSize.x * 0.7, position.x);
         float highlightMask = smoothstep(-blurSize.y * 0.7, blurSize.y * 0.7, position.y) *
@@ -231,7 +249,7 @@ vec3 kwinGlassOutline(vec2 position, vec2 blurSize, GlassFragment s, float glowS
         glow = mix(glow, vec3(1.0), thicknessShadow * highlightMask * glowStrength);
     }
 
-    return glow;
+    return clamp(glow, 0.0, 1.0);
 }
 
 void main()
@@ -276,7 +294,10 @@ void main()
     GlassFragment s;
 
     if (lg_refraction_strength > 0.0) {
-        vec4 r = clamp(corner_radius * 2.0, min(64.0 * niri_scale, minHalfSize), min(128.0 * niri_scale, minHalfSize));
+        vec4 r = corner_radius;
+        if (min(min(corner_radius.x, corner_radius.y), min(corner_radius.z, corner_radius.w)) > 1.0) {
+            r = clamp(corner_radius * 1.5, corner_radius, vec4(minHalfSize * 0.75));
+        }
         s = kwinSnellsRefraction(
             v_coords, position, halfWinSize, r, uvScale,
             minHalfSize, dist, edgeFactor, concaveFactor,
