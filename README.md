@@ -144,4 +144,4 @@ To cleanly remove Lniri and its Wayland session files while leaving standard Nir
 
 ## Credits & License
 
-- Liquid glass shader effects inspired by [kwin-effects-glass](https://github.com/4v3ngR/kwin-effects-glass) and based on [Niri-glass](https://github.com/zaroutt/Niri-glass).
+- Liquid glass kwin shader effects take from [kwin-effects-glass](https://github.com/4v3ngR/kwin-effects-glass) and project infra is based on [Niri-glass](https://github.com/zaroutt/Niri-glass) rust base and glsl shaders are heavily modified.
