@@ -206,7 +206,7 @@ ColorScheme=Darkly
 
 ## 7. Dolphin UI Configuration
 
-To achieve a clean, frameless look without redundant toolbar elements, update `~/.config/dolphinrc`:
+To achieve a clean, frameless look without redundant toolbar elements or floating status bubbles, update `~/.config/dolphinrc`:
 
 ```ini
 MenuBar=Disabled
@@ -228,6 +228,12 @@ IconSize=16
 [StatusBar]
 Visible=false
 ```
+
+### Key Parameters in `dolphinrc`
+- `ShowStatusBar=Disabled`: Completely removes the floating bottom-left status bubble and overlay dock (which otherwise displays the item count and storage info over the glass).
+- `ShowSpaceInfo=false`: Disables the bottom disk storage bar.
+- `MenuBar=Disabled`: Disables the legacy menu bar in favor of the clean unified header bar.
+- `ShowZoomSlider=false`: Removes the bottom zoom slider for an uninterrupted glass surface.
 
 ---
 
@@ -302,3 +308,7 @@ Dolphin will open as a floating, centered window featuring rounded refractive gl
 
 ### Issue: Window Corners Appear Square
 - Ensure `geometry-corner-radius 14` and `clip-to-geometry true` are set in the window rule.
+
+### Issue: Bottom Floating Status Bubble / Dock Appears
+- Ensure `ShowStatusBar=Disabled` and `ShowSpaceInfo=false` are set under `[General]` in `~/.config/dolphinrc`.
+- Terminate any running Dolphin instances (`killall dolphin`) before launching again so the configuration takes effect.
