@@ -118,23 +118,21 @@ window-rule {
         xray true
 
         liquid-glass {
-            mode "kwin-glass"
-            liquidity 0.6
+            mode "liquid"
+            liquidity 1.0
             refraction-strength 4.5
-            power-factor 3.2
-            refraction-bevel-intensity 10.0
-            refraction-offset-strength 8.0
+            power-factor 3.5
+            refraction-power 1.5
             edge-thickness 0.18
-            fringing 0.45
-            glow-weight 0.08
-            edge-lighting 0.60
-            oklab-saturation 1.0
+            fringing 0.50
+            glow-weight 0.0
+            edge-lighting 0.10
             saturation 1.20
-            vibrancy 0.45
+            vibrancy 0.40
             adaptive-dim 0.0
-            adaptive-boost 0.20
+            adaptive-boost 0.18
             physical-refraction 1.0
-            lens-distortion 0.20
+            lens-distortion 0.22
         }
     }
 }
@@ -234,21 +232,20 @@ Visible=true
 
 | Parameter | Value | Description |
 | :--- | :--- | :--- |
-| `mode` | `"kwin-glass"` | Enables Snell's Law dielectric vector refraction and SDF caustic bevel normals. |
-| `liquidity` | `0.6` | Widens the meniscus curve inward towards the window center for an organic fluid feel. |
-| `refraction-strength` | `4.5` | Magnitude of optical displacement ($IOR = 1.0 + \text{strength}$). |
-| `power-factor` | `3.2` | Bevel falloff curve from the window edges inward. |
-| `refraction-bevel-intensity`| `10.0` | Normal steepness and caustic lens distortion depth. |
-| `refraction-offset-strength` | `8.0` | Curvature distortion around corners. |
+| `mode` | `"liquid"` | Enables Lniri's organic fluid water-drop refraction engine with surface-tension curvature. |
+| `liquidity` | `1.0` | Maximizes liquid meniscus curvature depth and organic water-drop reflection. |
+| `refraction-strength` | `4.5` | Magnitude of background optical refraction ($IOR = 1.0 + \text{strength}$). |
+| `power-factor` | `3.5` | Falloff curve from the window edges inward (controls bevel width). |
+| `refraction-power` | `1.5` | Exponential power applied to displacement vectors for deep optical curvature. |
 | `edge-thickness` | `0.18` | Relative border width of the refractive meniscus bevel. |
-| `fringing` | `0.45` | Cauchy chromatic dispersion (splits RGB wavelengths along curves). |
-| `glow-weight` | `0.08` | Specular rim highlight profile along the outer window perimeter. |
-| `edge-lighting` | `0.60` | Blends dynamic background wallpaper color into the window rims. |
-| `oklab-saturation` | `1.0` | Processes color saturation in perceptually uniform Oklab space. |
-| `saturation` | `1.20` | Multiplier for refracted wallpaper color saturation. |
-| `vibrancy` | `0.45` | Color pop and luminance boost for the refracted substrate. |
-| `adaptive-boost` | `0.20` | Automatically lifts luminance over dark wallpapers for a lighter frosted appearance. |
-| `lens-distortion` | `0.20` | Gentle barrel lens bulge across the central file area. |
+| `fringing` | `0.50` | Cauchy chromatic dispersion (splits RGB wavelengths along curves). |
+| `glow-weight` | `0.0` | Eliminates artificial white lines, border highlights, and painted specular rims. |
+| `edge-lighting` | `0.10` | Subtle background edge illumination without excessive border glare. |
+| `saturation` | `1.20` | Multiplier for refracted background wallpaper color saturation. |
+| `vibrancy` | `0.40` | Color pop and luminance boost for the refracted substrate. |
+| `adaptive-boost` | `0.18` | Automatically lifts luminance over dark wallpapers for a lighter frosted appearance. |
+| `physical-refraction` | `1.0` | Center-directed Snell's Law refraction mode. |
+| `lens-distortion` | `0.22` | Subtle convex barrel lens bulge simulating a water droplet dome over the file view. |
 
 ---
 
