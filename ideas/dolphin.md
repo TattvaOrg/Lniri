@@ -126,8 +126,8 @@ window-rule {
             refraction-offset-strength 8.0
             edge-thickness 0.18
             fringing 0.45
-            glow-weight 0.08
-            edge-lighting 0.60
+            glow-weight 0.015
+            edge-lighting 0.20
             oklab-saturation 1.0
             saturation 1.20
             vibrancy 0.45
@@ -242,8 +242,8 @@ Visible=true
 | `refraction-offset-strength` | `8.0` | Curvature distortion around corners. |
 | `edge-thickness` | `0.18` | Relative border width of the refractive meniscus bevel. |
 | `fringing` | `0.45` | Cauchy chromatic dispersion (splits RGB wavelengths along curves). |
-| `glow-weight` | `0.08` | Specular rim highlight profile along the outer window perimeter. |
-| `edge-lighting` | `0.60` | Blends dynamic background wallpaper color into the window rims. |
+| `glow-weight` | `0.015` | Very low specular highlight on border rims, keeping the edge white effect minimal and subtle. |
+| `edge-lighting` | `0.20` | Subtle background edge illumination without excessive border glare. |
 | `oklab-saturation` | `1.0` | Processes color saturation in perceptually uniform Oklab space. |
 | `saturation` | `1.20` | Multiplier for refracted wallpaper color saturation. |
 | `vibrancy` | `0.45` | Color pop and luminance boost for the refracted substrate. |
