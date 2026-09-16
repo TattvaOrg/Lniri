@@ -1,6 +1,13 @@
+<div align=center>
+  
 # Bubble Liquid Glass & KWin Glass Setup Guide for Lniri
 
-A comprehensive guide for configuring the Bubble Qt6/QML file manager with authentic KWin Glass refraction, frosted background blur, and a floating translucent card layout matching Dolphin under the Lniri compositor.
+<img width="1363" height="767" alt="bubble-liquid" src="https://github.com/user-attachments/assets/8e96f843-e046-4275-bd76-972739871423" />
+<img width="1363" height="767" alt="bubble-blure" src="https://github.com/user-attachments/assets/fe987601-7ce1-4783-9e5a-b0c54d4a3479" />
+
+</div>
+
+- A comprehensive guide for configuring the Bubble Qt6/QML file manager with authentic KWin Glass refraction, frosted background blur, and a floating translucent card layout matching Dolphin under the Lniri compositor.
 
 ---
 
