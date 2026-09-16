@@ -55,6 +55,9 @@ Lniri reads standard Niri configuration files in the following order:
 2. `~/.config/niri/config.kdl` (seamless fallback for existing configs)
 3. Custom path via `$LNIRI_CONFIG` or `$NIRI_CONFIG`
 
+>[!IMPORTANT]
+> After installing it, your niri will show an error because you are editing a niri/config.kdl, so make sure that to use your niri again, remove all Lniri config from config.kdl. By only this, your main niri will work again, and to validate it, use lniri validate
+
 ### Basic Liquid Glass Window Rule
 
 Add the following to your `config.kdl`:
