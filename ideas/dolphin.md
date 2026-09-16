@@ -1,6 +1,10 @@
+<div align=center>
+  
 # Dolphin Liquid Glass & KWin Glass Setup Guide for Lniri
 
-A comprehensive guide for configuring the KDE Dolphin file manager with authentic KWin Glass refraction, frosted background blur, and a floating translucent card layout under the Lniri compositor.
+<img width="1364" height="766" alt="dolphin" src="https://github.com/user-attachments/assets/d84d160c-8112-4425-bcd0-6e7945c07bb6" />
+</div>
+- A comprehensive guide for configuring the KDE Dolphin file manager with authentic KWin Glass refraction, frosted background blur, and a floating translucent card layout under the Lniri compositor.
 
 ---
 
