@@ -214,7 +214,8 @@ MenuBar=Disabled
 [General]
 ShowFullPath=false
 ShowSelectionToggle=false
-ShowSpaceInfo=true
+ShowSpaceInfo=false
+ShowStatusBar=Disabled
 ShowZoomSlider=false
 Version=202
 
@@ -225,7 +226,7 @@ MenuBar=Disabled
 IconSize=16
 
 [StatusBar]
-Visible=true
+Visible=false
 ```
 
 ---
