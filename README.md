@@ -1,9 +1,6 @@
 # Lniri - Liquid Glass Engine for Niri
 
 - A liquid-glass optical refraction and background effect engine for the [Niri](https://github.com/niri-wm/niri) scrollable-tiling Wayland compositor.
->[!IMPORTANT]
->new `GLSL` shaders is not working fine (kwin) , so use a liquid one 
----
 
 https://github.com/user-attachments/assets/b98440ec-ffa4-47c4-9473-23d51ceb8d4d
 
