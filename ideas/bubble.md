@@ -2,6 +2,7 @@
   
 # Bubble Liquid Glass & KWin Glass Setup Guide for Lniri
 
+<img width="1044" height="664" alt="bubble" src="https://github.com/user-attachments/assets/c37ffe9d-d349-41aa-861f-332e0a79f1cb" />
 <img width="1363" height="767" alt="bubble-liquid" src="https://github.com/user-attachments/assets/8e96f843-e046-4275-bd76-972739871423" />
 <img width="1363" height="767" alt="bubble-blure" src="https://github.com/user-attachments/assets/fe987601-7ce1-4783-9e5a-b0c54d4a3479" />
 
