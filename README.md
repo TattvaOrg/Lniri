@@ -97,7 +97,7 @@ window-rule {
 
 ---
 
-## [Ideas](https://github.com/TattvaOrg/Lniri/ideas)
+## [Ideas](https://github.com/TattvaOrg/Lniri/tree/main/ideas)
 <table>
   <tr>
     <td>
@@ -108,6 +108,8 @@ window-rule {
     </td>
   </tr>
 </table>
+
+---
 
 ## Parameters Breakdown
 
