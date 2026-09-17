@@ -24,6 +24,98 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/TattvaOrg/Lniri/main/ins
 
 ---
 
+```mermaid
+flowchart TD
+
+subgraph group_session["Session &amp; distribution"]
+  node_installer["Installer<br/>[install.sh]"]
+  node_uninstaller["Uninstaller<br/>shell removal<br/>[uninstall.sh]"]
+  node_desktop_entry["Desktop entry<br/>display-manager entry<br/>[lniri.desktop]"]
+  node_session_launcher["Session launcher<br/>session script"]
+  node_user_service["Lniri user service<br/>systemd user unit<br/>[lniri.service]"]
+  node_portal_config["Portal configuration<br/>Wayland portal config<br/>[lniri-portals.conf]"]
+end
+
+subgraph group_compositor["Compositor integration"]
+  node_mapped_layers["Mapped layer lifecycle<br/>compositor render bridge<br/>[mapped.rs]"]
+  node_render_helpers["Render helper API<br/>render integration module<br/>[mod.rs]"]
+end
+
+subgraph group_effects["Effect rendering"]
+  node_background_effect["Background effect pass<br/>background capture pass"]
+  node_framebuffer_effect["Framebuffer composition<br/>framebuffer pass"]
+  node_xray["Xray sampling<br/>background sampling helper<br/>[xray.rs]"]
+  node_liquid_glass["Liquid-glass optics<br/>effect parameter interface<br/>[liquid_glass.rs]"]
+  node_shader_bindings["Shader bindings<br/>Rust GLSL boundary<br/>[mod.rs]"]
+  node_clipped_shader["Clipped surface shader<br/>GLSL fragment shader"]
+  node_kwin_shader["KWin glass reference<br/>reference GLSL shader<br/>[kwin-glass.frag]"]
+end
+
+subgraph group_config["Configuration &amp; Nix"]
+  node_appearance_config["Appearance model<br/>config parsing<br/>[appearance.rs]"]
+  node_example_config["Example KDL config<br/>window-rule config<br/>[config.kdl]"]
+  node_nix_flake["Nix package entry<br/>Nix flake<br/>[flake.nix]"]
+  node_nixos_module["NixOS module<br/>NixOS deployment module<br/>[nixos-module.nix]"]
+  node_home_manager_module["Home Manager module<br/>Home Manager deployment module"]
+end
+
+node_installer -->|"installs"| node_session_launcher
+node_installer -->|"installs"| node_desktop_entry
+node_installer -->|"installs"| node_user_service
+node_uninstaller -.->|"removes installed artifacts"| node_installer
+node_desktop_entry -->|"launches"| node_session_launcher
+node_session_launcher -->|"starts compositor session"| node_mapped_layers
+node_user_service -->|"runs"| node_mapped_layers
+node_portal_config -.->|"configures portal environment"| node_session_launcher
+node_mapped_layers -->|"invokes"| node_render_helpers
+node_render_helpers -->|"coordinates"| node_background_effect
+node_background_effect -->|"samples background through"| node_xray
+node_background_effect -->|"renders within"| node_framebuffer_effect
+node_framebuffer_effect -->|"composites effect"| node_liquid_glass
+node_liquid_glass -->|"passes GPU parameters"| node_shader_bindings
+node_shader_bindings -->|"loads"| node_clipped_shader
+node_example_config -->|"provides window rules"| node_appearance_config
+node_appearance_config -->|"supplies optics settings"| node_liquid_glass
+node_nix_flake -->|"exposes"| node_nixos_module
+node_nix_flake -->|"exposes"| node_home_manager_module
+node_nixos_module -->|"deploys session"| node_session_launcher
+node_home_manager_module -->|"deploys session"| node_session_launcher
+node_kwin_shader -.->|"documents alternate model"| node_liquid_glass
+
+click node_installer "https://github.com/tattvaorg/lniri/blob/main/install.sh"
+click node_uninstaller "https://github.com/tattvaorg/lniri/blob/main/uninstall.sh"
+click node_desktop_entry "https://github.com/tattvaorg/lniri/blob/main/resources/lniri.desktop"
+click node_session_launcher "https://github.com/tattvaorg/lniri/blob/main/resources/lniri-session"
+click node_user_service "https://github.com/tattvaorg/lniri/blob/main/resources/lniri.service"
+click node_portal_config "https://github.com/tattvaorg/lniri/blob/main/resources/lniri-portals.conf"
+click node_mapped_layers "https://github.com/tattvaorg/lniri/blob/main/src/layer/mapped.rs"
+click node_render_helpers "https://github.com/tattvaorg/lniri/blob/main/src/render_helpers/mod.rs"
+click node_background_effect "https://github.com/tattvaorg/lniri/blob/main/src/render_helpers/background_effect.rs"
+click node_framebuffer_effect "https://github.com/tattvaorg/lniri/blob/main/src/render_helpers/framebuffer_effect.rs"
+click node_xray "https://github.com/tattvaorg/lniri/blob/main/src/render_helpers/xray.rs"
+click node_liquid_glass "https://github.com/tattvaorg/lniri/blob/main/src/render_helpers/liquid_glass.rs"
+click node_shader_bindings "https://github.com/tattvaorg/lniri/blob/main/src/render_helpers/shaders/mod.rs"
+click node_clipped_shader "https://github.com/tattvaorg/lniri/blob/main/src/render_helpers/shaders/clipped_surface.frag"
+click node_appearance_config "https://github.com/tattvaorg/lniri/blob/main/niri-config/src/appearance.rs"
+click node_example_config "https://github.com/tattvaorg/lniri/blob/main/config.kdl"
+click node_nix_flake "https://github.com/tattvaorg/lniri/blob/main/flake.nix"
+click node_nixos_module "https://github.com/tattvaorg/lniri/blob/main/nix/nixos-module.nix"
+click node_home_manager_module "https://github.com/tattvaorg/lniri/blob/main/nix/home-manager-module.nix"
+click node_kwin_shader "https://github.com/tattvaorg/lniri/blob/main/resources/shaders/kwin-glass.frag"
+
+classDef toneNeutral fill:#f8fafc,stroke:#334155,stroke-width:1.5px,color:#0f172a
+classDef toneBlue fill:#dbeafe,stroke:#2563eb,stroke-width:1.5px,color:#172554
+classDef toneAmber fill:#fef3c7,stroke:#d97706,stroke-width:1.5px,color:#78350f
+classDef toneMint fill:#dcfce7,stroke:#16a34a,stroke-width:1.5px,color:#14532d
+classDef toneRose fill:#ffe4e6,stroke:#e11d48,stroke-width:1.5px,color:#881337
+classDef toneIndigo fill:#e0e7ff,stroke:#4f46e5,stroke-width:1.5px,color:#312e81
+classDef toneTeal fill:#ccfbf1,stroke:#0f766e,stroke-width:1.5px,color:#134e4a
+class node_installer,node_uninstaller,node_desktop_entry,node_session_launcher,node_user_service,node_portal_config toneBlue
+class node_mapped_layers,node_render_helpers toneAmber
+class node_background_effect,node_framebuffer_effect,node_xray,node_liquid_glass,node_shader_bindings,node_clipped_shader,node_kwin_shader toneMint
+class node_appearance_config,node_example_config,node_nix_flake,node_nixos_module,node_home_manager_module toneRose
+```
+
 ## How to Launch
 
 1. **From your Display Manager (GDM, SDDM, Ly, Greetd):**  
