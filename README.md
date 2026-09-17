@@ -1,7 +1,7 @@
 # Lniri - Liquid Glass Engine for Niri
 
 - A liquid-glass optical refraction and background effect engine for the [Niri](https://github.com/niri-wm/niri) scrollable-tiling Wayland compositor.
-
+     
 https://github.com/user-attachments/assets/b98440ec-ffa4-47c4-9473-23d51ceb8d4d
 
 https://github.com/user-attachments/assets/4df0c81e-beb1-4ede-903e-5af182120164
@@ -96,6 +96,18 @@ window-rule {
 ```
 
 ---
+
+## [Ideas](https://github.com/TattvaOrg/Lniri/ideas)
+<table>
+  <tr>
+    <td>
+<img width="1044" height="664" alt="dolphin" src="https://github.com/user-attachments/assets/59d51b3d-fd18-4695-9798-d184d5d7405c" />
+    </td>
+    <td>
+<img width="1044" height="664" alt="bubble" src="https://github.com/user-attachments/assets/9a94692c-7ff8-4831-826a-422703aa8d16" />
+    </td>
+  </tr>
+</table>
 
 ## Parameters Breakdown
 
