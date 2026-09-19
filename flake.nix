@@ -41,6 +41,7 @@
               mkdir -p src/render_helpers/shaders niri-config/src src/layer
 
               # Apply Lniri Liquid Glass overlay files onto upstream Niri
+              cp -f ${./Cargo.toml} Cargo.toml
               cp -f ${./src/render_helpers/liquid_glass.rs} src/render_helpers/liquid_glass.rs
               cp -f ${./src/render_helpers/background_effect.rs} src/render_helpers/background_effect.rs
               cp -f ${./src/render_helpers/framebuffer_effect.rs} src/render_helpers/framebuffer_effect.rs
