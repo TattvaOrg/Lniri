@@ -212,9 +212,9 @@ window-rule {
 //     }
 // }
 
-// ============================================================================
+
 // 3. LIQUID GLASS LAYER RULES (Bars, Panels, Launchers, e.g. Mistbar, Waybar)
-// ============================================================================
+
 layer-rule {
     match namespace="^mistbar.*"
     match namespace="^waybar.*"
@@ -264,9 +264,8 @@ For the glass effect to be visible, your terminal must have transparency enabled
 ### Kitty (`~/.config/kitty/kitty.conf`)
 
 ```ini
-# ============================================================================
 # Kitty Liquid Glass Settings
-# ============================================================================
+
 
 # 1. Background Opacity (0.45 - 0.60 recommended for liquid glass)
 background_opacity 0.50
@@ -400,6 +399,9 @@ swww img /path/to/wallpaper.png --transition-type wipe --transition-duration 2
 
 ## 5. Curated Glass Presets
 
+>[!important]
+>You can use a given example, but it either doesn't match with your expectations, so recommended that mess it by yourself for better result or open a [discussion](https://github.com/TattvaOrg/Lniri/discussions) for it.
+
 Swap the `liquid-glass { ... }` block in your `config.kdl` to match your personal aesthetic preference:
 
 ### Preset 1: Authentic KWin Glass (Faithful Port of kwin-effects-glass)
@@ -480,7 +482,7 @@ background-effect {
 
 ---
 
-### Preset 4: Dolphin Frosted Glass (Reference Look from dolphin.png)
+### Preset 4: Dolphin Frosted Glass
 *Deep dual-filter background blur with Snell's law optical refraction, smooth chromatic dispersion along curved borders, and natural beveled specular highlights.*
 
 ```kdl
@@ -510,7 +512,7 @@ background-effect {
 
 ---
 
-### Preset 2: Rose Liquid Glass (Reference Look from liquid_enough.png)
+### Preset 2: Rose Liquid Glass
 *Maximum liquid meniscus depth, cohesive fluid dome, and rich organic Cauchy dispersion as seen in the kwin-effects-glass rose terminal.*
 
 ```kdl
