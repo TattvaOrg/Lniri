@@ -1,9 +1,8 @@
+# NOTE: Lniri is a lightweight overlay on top of upstream niri-wm/niri (v26.04).
+# Full workspace members (niri-ipc, niri-visual-tests, etc.) reside in upstream
+# and are assembled during build by the installer, CI workflows, and Nix flake.
 [workspace]
-members = [
-    "niri-config",
-    "niri-ipc",
-    "niri-visual-tests",
-]
+members = []
 
 [workspace.package]
 version = "26.4.0"

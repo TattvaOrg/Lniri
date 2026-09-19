@@ -26,7 +26,15 @@
         pkgs:
         let
           system = pkgs.stdenv.hostPlatform.system;
-          upstreamNiri = niri.packages.${system}.niri;
+          baseNiri = niri.packages.${system}.niri;
+          # Ensure libdisplay-info_0_3 is used to fix the compatibility issue on newer nixpkgs
+          upstreamNiri =
+            if baseNiri ? override then
+              baseNiri.override {
+                libdisplay-info = pkgs.libdisplay-info_0_3;
+              }
+            else
+              baseNiri;
         in
         upstreamNiri.overrideAttrs (oldAttrs: {
           pname = "lniri";
@@ -41,7 +49,6 @@
               mkdir -p src/render_helpers/shaders niri-config/src src/layer
 
               # Apply Lniri Liquid Glass overlay files onto upstream Niri
-              cp -f ${./Cargo.toml} Cargo.toml
               cp -f ${./src/render_helpers/liquid_glass.rs} src/render_helpers/liquid_glass.rs
               cp -f ${./src/render_helpers/background_effect.rs} src/render_helpers/background_effect.rs
               cp -f ${./src/render_helpers/framebuffer_effect.rs} src/render_helpers/framebuffer_effect.rs
