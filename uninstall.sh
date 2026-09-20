@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 set -e
 
-echo "               Lniri Uninstaller                          "
-
 # Refuse if an lniri session is currently active
 if systemctl --user -q is-active lniri.service 2>/dev/null; then
   echo "lniri.service is currently active (your running session)."
