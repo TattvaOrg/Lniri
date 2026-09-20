@@ -1,18 +1,11 @@
 #!/usr/bin/env bash
 set -e
-
-# ==============================================================================
-# Lniri - Liquid Glass Compositor Installer & Updater
-# Repository: https://github.com/TattvaOrg/Lniri
-# ==============================================================================
-
 BOLD="\033[1m"
 GREEN="\033[0;32m"
 CYAN="\033[0;36m"
 YELLOW="\033[0;33m"
 RESET="\033[0m"
 
-# Detect if Lniri is already installed
 IS_UPDATE=false
 if command -v lniri >/dev/null 2>&1 || [ -f "/usr/local/bin/lniri" ]; then
   IS_UPDATE=true
